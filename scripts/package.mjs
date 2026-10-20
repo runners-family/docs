@@ -11,7 +11,7 @@ await mkdir(dist, { recursive: true });
 await rm(staging, { recursive: true, force: true });
 await mkdir(staging);
 // Explicit allowlist: never package the application, local state, keys, env files or Git history.
-const files = ['docs.json', 'openapi.json', 'index.mdx', 'quickstart.mdx', 'styles.css', 'source-manifest.json', 'README.md', 'DEPLOY.md', 'package.json', 'package-lock.json', '.gitignore', '.mintignore'];
+const files = ['docs.json', 'openapi.json', 'index.mdx', 'styles.css', 'source-manifest.json', 'README.md', 'DEPLOY.md', 'package.json', 'package-lock.json', '.gitignore', '.mintignore'];
 for (const directory of ['guides', 'assets', 'scripts']) {
   for (const name of await readdir(resolve(root, directory))) {
     if (name.startsWith('.') || !/\.(mdx|svg|mjs)$/.test(name)) continue;

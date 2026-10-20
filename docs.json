@@ -18,14 +18,20 @@
       {
         "tab": "Guides",
         "groups": [
-          { "group": "Start building", "pages": ["index", "quickstart", "guides/basics", "guides/amounts", "guides/authentication"] },
-          { "group": "Launch coins", "pages": ["guides/launch", "guides/recovery"] },
-          { "group": "Operate your integration", "pages": ["guides/rate-limits", "guides/errors"] }
+          { "group": "Launch API", "pages": ["index", "guides/launch", "guides/errors"] }
         ]
       },
       { "tab": "API reference", "openapi": "/openapi.json" }
     ]
   },
+  "redirects": [
+    { "source": "/quickstart", "destination": "/" },
+    { "source": "/guides/basics", "destination": "/#first-request" },
+    { "source": "/guides/amounts", "destination": "/guides/launch#before-you-start" },
+    { "source": "/guides/authentication", "destination": "/guides/launch#upload-metadata" },
+    { "source": "/guides/recovery", "destination": "/guides/launch#confirm-and-retry" },
+    { "source": "/guides/rate-limits", "destination": "/guides/errors#limits" }
+  ],
   "api": { "playground": { "display": "interactive", "proxy": true } },
   "footer": { "links": [{ "header": "RUNNERS", "items": [{ "label": "Launchpad", "href": "https://runners.family" }, { "label": "Launch API contract", "href": "/openapi.json" }] }] }
 }

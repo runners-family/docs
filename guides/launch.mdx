@@ -1,65 +1,38 @@
 ---
 title: "Launch a coin"
-description: "The complete wallet-authorized launch protocol, from artwork to confirmation."
+description: "Upload metadata, sign, submit and confirm."
 ---
 
-Everything a browser can do on the create page works from any HTTP client that holds an ed25519 Solana keypair. There are no cookies or sessions: every write is authorized by a signature from the creator's wallet key.
+### Before you start
 
-- All bodies and responses are JSON (`Content-Type: application/json`) unless noted. Amounts are integer strings in base units (atoms). Public keys and signatures are base58; message signatures sent in JSON are base64.
-- Do not send an `Origin` header. Requests whose `Origin` differs from the app origin are refused (`403 origin_forbidden`) to protect browser users; the app origin is still bound inside every signed message.
-- Errors are `{ "error": "<human message>", "code": "<stable code>" }` with an HTTP status. Switch on `code`; the message may change.
+Use a funded Solana wallet. Generate and retain separate mint and config keypairs locally; retries reuse them. Send JSON unless uploading multipart data, and omit the HTTP `Origin` header.
 
-### The contract in one paragraph
+- `mode: "standard"` pairs with SOL (`So11111111111111111111111111111111111111112`). `"rewards"` accepts a supported quote token.
+- Amounts are decimal strings in integer base units. `firstBuy: "0"` skips the initial buy; `"100000000"` is 0.1 SOL. Other quote tokens use their on-chain decimals. Rent and network fees use lamports.
+- `GET /api/metadata` returns the authorization challenge. Use its `appOrigin`, `deploymentId` and Unix-second `issuedAt`; timestamps are accepted from 300 seconds before to 30 seconds after server time.
 
-A launch is **one transaction** when a configuration already exists for the coin's price band, and **two transactions** otherwise. Configurations are shared: every launch for the same quote token, coin type, launch-policy revision and 5% quote-price band uses the same configuration, priced at the band's reference price (so the launch and graduation market caps are within about 2.5% of their USD targets at the pair token's stored USD price; that price is refreshed weekly and may be up to about 8 days old, so in today's dollars the caps also move with the pair token's price since it was observed). The platform keeps configurations ready for popular quotes (SOL and USDC on mainnet), so most launches are one transaction. When none exists, the first creator in that band pays for it in a first transaction (tx A, about 0.006 SOL of rent at mainnet's current rate of 5,080 lamports per byte), and it becomes shared for everyone after it finalizes. The launch transaction (tx B) creates the coin and its bonding-curve pool and, optionally, performs the creator's first buy in the same transaction, so nobody can buy before the creator, and the first buy pays the normal trading fee while bots in the first seconds pay more.
+### Upload metadata
 
-### Flow
-
-1. `GET /api/metadata` for the upload challenge.
-2. `POST /api/metadata` with the image and coin details, signed by the wallet.
-3. Optional: `GET /api/launch/estimate?quote=<mint>&mode=standard|rewards` to see the terms, cost and whether it will be one or two transactions.
-4. Generate two fresh keypairs locally: the **mint** (the coin's address) and a **config** key (used only if the band needs a new configuration). Keep both secret keys until the launch is confirmed; a retry must reuse them.
-5. `POST /api/launch/prepare` with the signed launch request. The response says which path applies and contains ready-to-sign transactions.
-6. Sign each returned transaction's message with the listed signers, without changing a byte.
-7. `POST /api/launch/submit` with the signed transactions. Add `"relay": true` to have the server broadcast them (tx A first, tx B once tx A is confirmed). Otherwise broadcast them yourself in that order.
-8. Poll `POST /api/launch/confirm` until `state` is `confirmed`, or retry from step 5 when it is `expired` or `failed` with a non-null `retry`.
-
-The coin appears on the site once tx B finalizes (about 13 seconds after it lands).
-
-### 1. Upload challenge
-
-`GET /api/metadata`
+Build `metadata` with keys in this exact order, including empty fields:
 
 ```json
-{ "deploymentId": "mainnet:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d", "appOrigin": "https://runners.family", "issuedAt": 1791200000 }
+{"name":"Example Coin","symbol":"COIN","description":"","socials":{"x":"","telegram":"","website":""}}
 ```
 
-`issuedAt` is the server clock in Unix seconds. Use it (not your own clock) for the `issuedAt` fields below; signed requests are accepted from 300 seconds before to 30 seconds after the server time.
+Trim name, symbol and description before signing. Name: 1–32 UTF-8 bytes, no control characters. Symbol: `^[A-Z0-9]{1,10}$`. Description: at most 280 characters. Social links: empty or an HTTP(S) URL with a dotted hostname, no credentials and at most 2048 characters. Normalize nonempty links with `new URL(link).href`, adding `https://` if no scheme was supplied.
 
-### 2. Upload image and details
+Images must be PNG, JPEG, GIF or WebP, at most 5 MiB and 4096 × 4096 pixels. Compute lowercase hexadecimal SHA-256 hashes:
 
-Coin details (`metadata`):
-
-```json
-{ "name": "Runners Dog", "symbol": "RDOG", "description": "", "socials": { "x": "", "telegram": "", "website": "https://runners.dog/" } }
-```
-
-Rules: `name` 1 to 32 UTF-8 bytes, no control characters; `symbol` matches `^[A-Z0-9]{1,10}$`; `description` at most 280 characters; each social link is `""` or an `http(s)` URL with a dot in the host, at most 2048 characters. The server trims `name`, `symbol` and `description` and normalizes links to `new URL(link).href` (a bare host gets `https://` and a trailing `/`). **Send values already in that normalized form**, because the signature covers the normalized details.
-
-Image: PNG, JPEG, GIF or WEBP, at most 5 MB and 4096 x 4096 pixels; its bytes must match the declared type.
-
-Digest (lowercase hex SHA-256):
-
-```
+```text
 imageHash = sha256(imageBytes)
-digest    = sha256(utf8(JSON.stringify(["RUNNERS metadata content v1", metadata, imageType, imageHash])))
+digest = sha256(utf8(JSON.stringify([
+  "RUNNERS metadata content v1", metadata, imageType, imageHash
+])))
 ```
 
-`metadata` is serialized with keys in the order `name, symbol, description, socials` and `socials` keys in the order `x, telegram, website`.
+Sign this exact UTF-8 message with ed25519. Join lines with `\n`, with no trailing newline:
 
-Message to sign (UTF-8, lines joined by `\n`, no trailing newline):
-
-```
+```text
 RUNNERS launch metadata v1
 Origin: <appOrigin>
 Deployment: <deploymentId>
@@ -69,167 +42,108 @@ Issued: <issuedAt>
 Authorize publishing this coin's image and metadata. No transaction or token transfer.
 ```
 
-Request, either `multipart/form-data` with fields `image` (file) and `authorization` (JSON string), or JSON:
-
-`POST /api/metadata`
+Encode the signature as base64 and send `POST /api/metadata`:
 
 ```json
 {
-  "authorization": { "owner": "<owner>", "deploymentId": "<deploymentId>", "issuedAt": 1791200000, "signatureBase64": "<88-char base64>", "metadata": { "name": "Runners Dog", "symbol": "RDOG", "description": "", "socials": { "x": "", "telegram": "", "website": "https://runners.dog/" } } },
-  "image": { "type": "image/png", "base64": "<image bytes in base64>" }
+  "authorization": {
+    "owner": "<wallet public key>",
+    "deploymentId": "<deploymentId>",
+    "issuedAt": 1791200000,
+    "signatureBase64": "<message signature>",
+    "metadata": {"name":"Example Coin","symbol":"COIN","description":"","socials":{"x":"","telegram":"","website":""}}
+  },
+  "image": {"type":"image/png","base64":"<image bytes>"}
 }
 ```
 
-Response (`StoredMetadata`): `{ "id", "namespace", "owner", "digest", "uri", "imageUri", "imageType", "metadata" }`. Keep `id` and `namespace`. Uploading identical content again returns the same record. Uploads no launch uses are removed after 24 hours (content another coin also uses stays published). A `503` with "still being published" asks you to upload again shortly.
+Alternatively, send multipart fields `image` (file) and `authorization` (JSON string). Save the returned `id` and `namespace`. Identical uploads return the same record; unused uploads expire after 24 hours.
 
-### 3. Estimate (optional)
+### Prepare
 
-`GET /api/launch/estimate?quote=So11111111111111111111111111111111111111112&mode=standard`
+Optional cost check:
+
+```http
+GET /api/launch/estimate?quote=So11111111111111111111111111111111111111112&mode=standard
+```
+
+Read `costs`, `economics`, `transactionCount` and `validUntil`. Network and priority fees are extra. For an initial buy, add the estimate's `firstBuyRent` to `totalRent`; prepare's `totalRent` already includes it. `wrappedSolRent` is temporary and refunded in the launch transaction. Prepare returns exact costs for your metadata; an estimate uses maximum name/ticker lengths.
+
+Construct the signed request in exactly this property order:
 
 ```json
-{
-  "deploymentId": "...", "quoteMint": "So111...", "mode": "standard",
-  "transactionCount": 1, "sharedConfig": "<config address or null>",
-  "costs": { "configRent": "0", "poolRent": "8554720", "totalRent": "8554720", "firstBuyRent": "1513840", "wrappedSolRent": "1488440" },
-  "economics": { "policyRevision": "...", "priceBand": { "index": 102, "referenceUsd": 151.9, "stepBps": 500 },
-    "curveFees": { "grossFeeBps": 187.5, "creatorBps": 49.5, "creatorTradingFeePercentage": 33, "creatorFeeNumerator": "4950000", "...": "..." }, "migratedFees": { "...": "..." },
-    "antiSniping": { "startingFeeBps": 5000, "durationSlots": 10, "cliffFeeNumerator": "500000000", "reductionFactor": "48125000", "endFeeNumerator": "18750000", "...": "..." },
-    "migrationQuoteThreshold": "...", "graduationMarketCapUsd": 69000, "initialMarketCapUsd": 4500, "priceObservedAt": 1791200000 },
-  "configInstructionBase64": "<create_config data>", "quoteTokenProgram": "Tokenkeg...", "tokenBadge": null, "serverTime": 1791200001, "validUntil": 1791200120
-}
+{"deploymentId":"<deploymentId>","owner":"<wallet public key>","baseMint":"<mint public key>","quoteMint":"So11111111111111111111111111111111111111112","config":"<config public key>","mode":"standard","metadataId":"<upload id>","metadataNamespace":"<upload namespace>","firstBuy":"0","issuedAt":1791200000}
 ```
 
-`mode` is `standard` or `rewards` (Reward coin: 1% of trading volume goes to the coin's holders; neither type has a transfer tax). Standard coins are paired with SOL only; a standard launch or estimate with another pair token is refused with `standard_pair_sol`. Reward coins may use any supported pair token. The curve is converted from the policy's USD targets with the pair token's stored USD price, which the platform refreshes weekly; `economics.priceObservedAt` is when that price was observed, and launches accept stored prices up to about 8 days old. A pair token without a usable stored price (used for the first time, or its price is too old) is priced on demand by a signed prepare; the estimate never prices it but queues it and answers `price_pending` (503; ask again in a few seconds). A token the price provider does not price cannot be a pair (`quote_unpriced`), and a token that is not pre-warmed (SOL and USDC on mainnet are) needs at least $25,000 of liquidity behind its price (`quote_illiquid`). A refreshed price more than 3x away from the stored one replaces it only once an observation at least 24 hours later confirms the move; launches keep the stored price meanwhile. Rent is in lamports, at the network's current rent rate; network and priority fees are extra. Every coin is a Token-2022 mint that stores its metadata in the mint, so a launch on an existing shared config locks about 0.0086 SOL (pool, mint and two vaults), with no metadata account or metadata fee. `wrappedSolRent` is the temporary wrapped-SOL account a SOL first buy opens and closes in the same transaction (refunded). An estimate's `totalRent` excludes the token account an initial buy creates: add `firstBuyRent` when you will buy (prepare's `totalRent` already includes it for its `firstBuy`). An estimate also assumes a 32-byte name and a 10-byte ticker (with the metadata link an upload gets): each byte shorter locks one byte's rent less, and prepare's costs are exact. The creator earns 0.495% (standard) or 0.5% (reward) of curve volume until graduation, paid by the pool and claimed from it; the total trading fee is 1.875% or 3.125% on the curve and 1.25% or 2.5% after graduation.
+`owner`, `baseMint`, `quoteMint` and `config` must all differ. Refresh the challenge if its timestamp expired. Sign these UTF-8 lines, joined with `\n` and no trailing newline:
 
-### 4. Prepare
-
-Message to sign (UTF-8, lines joined by `\n`):
-
-```
+```text
 RUNNERS launch preparation v2
 Origin: <appOrigin>
-<JSON request>
+<JSON.stringify(request), no spaces>
 Authorize preparing this coin's launch. Your wallet will approve the launch transactions separately.
 ```
 
-`<JSON request>` is `JSON.stringify` of exactly these fields in exactly this order, no spaces:
+Send `POST /api/launch/prepare` with those request fields plus `signatureBase64`. Optional unsigned `options` fields are `priority` (`normal`, `fast` or `turbo`; default `fast`), `slippageBps` (0–5000; default 0) and `buildTransactions` (default `true`). A zero-slippage first buy executes inside pool creation. Setting `buildTransactions: false` returns no transactions to sign.
 
-```json
-{"deploymentId":"<deploymentId>","owner":"<wallet>","baseMint":"<mint public key>","quoteMint":"<quote mint>","config":"<config public key>","mode":"standard","metadataId":"<upload id>","metadataNamespace":"<upload namespace>","firstBuy":"1000000000","issuedAt":1791200000}
+The response includes unsigned `transactions`, their `signers`, `costs`, `economics`, `config`, `pool` and `validUntil`:
+
+| `configSource` | Transactions |
+| --- | --- |
+| `shared` | Sign `transactions.pool`; `transactions.config` is `null`. Use the returned `config`, which can differ from your config key. |
+| `creator` | Sign `transactions.config` with the owner and config keys, then `transactions.pool` with every listed signer. |
+
+Inspect the transaction instructions, fee payer, metadata, first-buy amount and launch terms before signing. Shared configurations can be verified against a simulation of the expected config instruction; their `configCreationSignature` alone is not verification.
+
+### Sign and submit
+
+Sign every returned transaction with its listed keys, without changing its message:
+
+```js
+// @solana/web3.js; requiredKeypairs match this transaction's signers.
+const tx = Transaction.from(Buffer.from(transactionBase64, 'base64'));
+tx.partialSign(...requiredKeypairs);
+const signedWire = tx.serialize().toString('base64');
 ```
 
-- `firstBuy`: the creator's initial buy in quote atoms (`"0"` for none). It must fit in the initial curve; there is no percentage cap.
-- `owner`, `baseMint`, `quoteMint` and `config` must all differ.
+Persist the prepared response, signed wires and signatures before sending. Submit before `validUntil` (at most 120 seconds after prepare) and before blockhash expiry.
 
-`POST /api/launch/prepare`
-
-```json
-{ "deploymentId": "...", "owner": "...", "baseMint": "...", "quoteMint": "...", "config": "...", "mode": "standard",
-  "metadataId": "...", "metadataNamespace": "...", "firstBuy": "1000000000", "issuedAt": 1791200000,
-  "signatureBase64": "<signature of the message>",
-  "options": { "priority": "fast" } }
-```
-
-`options` is not signed: `priority` is `normal`, `fast` (default) or `turbo`; `slippageBps` (integer 0 to 5000, default 0) sets the first buy's minimum received: the first buy runs in the transaction that creates the pool, before anyone else can trade, so it receives exactly `firstBuyQuote.tokensOut` and needs no tolerance (only a Token-2022 pair token whose transfer fee changes at an epoch boundary could deliver less, and the launch then fails); `buildTransactions: false` skips building transactions (`transactions` and `firstBuyQuote` are then `null`).
-
-Response (`PreparedLaunch`, abridged):
+`POST /api/launch/submit`:
 
 ```json
 {
-  "status": "ready", "configSource": "shared", "transactionCount": 1,
-  "config": "<config used>", "pool": "<pool address>", "baseMint": "...", "firstBuy": "1000000000",
-  "configCreationSignature": "<signature that created the shared config, or null>",
-  "transactions": {
-    "config": null,
-    "pool": { "transactionBase64": "<unsigned legacy wire>", "blockhash": "...", "lastValidBlockHeight": "...",
-      "signers": ["<owner>", "<baseMint>"], "computeUnitLimit": 400000, "computeUnitPrice": "10000" }
+  "deploymentId":"<deploymentId>",
+  "owner":"<wallet public key>",
+  "baseMint":"<mint public key>",
+  "pool":"<pool from prepare>",
+  "config":"<config from prepare>",
+  "configTransaction":null,
+  "poolTransaction":{
+    "signature":"<base58 fee-payer signature>",
+    "transactionBase64":"<signed wire in canonical base64>",
+    "blockhash":"<from prepare>",
+    "lastValidBlockHeight":"<from prepare>"
   },
-  "firstBuyQuote": { "amountIn": "1000000000", "tokensOut": "...", "minimumOut": "...", "supplyBps": 652, "slippageBps": 0 },
-  "costs": { "configRent": "0", "poolRent": "...", "totalRent": "...", "firstBuyRent": "..." }, "validUntil": 1791200120, "serverTime": 1791200001,
-  "metadata": { "name": "...", "symbol": "...", "uri": "..." }, "economics": { "...": "..." }, "configInstructionBase64": "..."
+  "relay":true
 }
 ```
 
-- `configSource: "shared"`: one transaction (`transactions.config` is `null`); the launch uses `config`, an existing registered configuration, and your config key is not used.
-- `configSource: "creator"`: two transactions; `transactions.config` creates the band's configuration at your config key and must be signed by the owner and the config key.
-- Submit before `validUntil` (120 seconds after the prepare call) and before the blockhash expires (about 60 to 90 seconds). Preparing again is free and returns fresh transactions; the terms stay the same until the weekly price refresh moves the pair token into another price band.
-- To check the terms yourself, do what the browser does before signing: rebuild the expected config instruction (`create_config`, or `create_config2` without base transfer-fee terms when the quote mint has a transfer-fee extension) from public inputs (the launch policy, the band's reference price `1.05^(index+0.5)` from `economics.priceBand.index`, the quote mint's decimals and transfer-fee extension read from your own RPC, and the deployment's leftover receiver) with the same curve builder as `lib/launch/config-builder.ts`, and require `configInstructionBase64` to equal it byte for byte. For a shared config, simulate that instruction for a fresh config address (any funded fee payer, `sigVerify: false`, `accounts` set to the fresh address) and require the returned account to equal the `config` account byte for byte. `configCreationSignature` (the transaction that created a shared config) is informational.
+For `configSource: "creator"`, supply `configTransaction` in the same shape as `poolTransaction`. With `relay: true`, RUNNERS saves and verifies the wires, then broadcasts config first and pool after config confirmation. Otherwise broadcast in that order yourself. Repeating the same signed submission is idempotent; a successful save is not confirmation.
 
-### 5. Sign and submit
+### Confirm and retry
 
-Sign each transaction's message bytes (the wire without its signature section) with every key in `signers`, then place the signatures in order. With `@solana/web3.js`: `const tx = Transaction.from(Buffer.from(transactionBase64, "base64")); tx.partialSign(owner, otherSigner); const wire = tx.serialize()`. Any change to the message (including compute budget) is rejected.
-
-`POST /api/launch/submit`
+`POST /api/launch/confirm`:
 
 ```json
-{ "deploymentId": "...", "owner": "...", "baseMint": "...", "pool": "<pool from prepare>", "config": "<config from prepare>",
-  "configTransaction": null,
-  "poolTransaction": { "signature": "<base58 fee-payer signature>", "transactionBase64": "<signed wire>", "blockhash": "...", "lastValidBlockHeight": "..." },
-  "relay": true }
+{"deploymentId":"<deploymentId>","baseMint":"<mint public key>","signature":"<pool transaction signature>"}
 ```
 
-`configTransaction` has the same shape and is required exactly when `configSource` is `creator`. The server verifies every byte against the prepared launch (programs, accounts, metadata, first-buy amount, minimum received above zero, compute budget at most two instructions) and stores the signed wires before anything is broadcast.
-
-- `transactionBase64` must be the canonical base64 encoding of the wire (as `Buffer.toString("base64")` produces it).
-- `lastValidBlockHeight` is informational: the server stores its provider's newest last valid block height as the launch's expiry bound (never earlier than the signed blockhash's real one).
-- A wire from an earlier attempt, or one that already failed on chain, is refused with `transaction_expired`: prepare again and sign the new transactions.
-
-Response:
-
-```json
-{ "saved": true, "state": "signed", "relayed": { "config": null, "pool": "sent" } }
-```
-
-`relayed` is `null` without relay. With relay, the request waits up to about 20 seconds for tx A to be confirmed before sending tx B (not when tx A's blockhash already expired): `config` is `confirmed`, `pending` or `failed` (`null` for one-transaction launches) and `pool` is `sent` or `waiting`; both are `null` for a launch that is already confirmed, failed or expired (nothing is sent). While the launch is pending the server keeps re-sending relayed wires on each status check until they land or expire. Submitting the same signed wires again is idempotent (add `"relay": true` to switch an accepted launch to relay). Without relay, send tx A, wait until it is confirmed, then send tx B.
-
-### 6. Status
-
-`POST /api/launch/confirm` with `{ "deploymentId": "...", "baseMint": "...", "signature": "<pool transaction signature>" }`
-
-```json
-{ "state": "confirmed", "signature": "...", "configSignature": null, "configLanded": true, "retry": null }
-```
-
-| state | meaning |
+| `state` | Action |
 | --- | --- |
-| `unknown` | Submitted; not final yet. Keep polling (every few seconds). |
-| `config_landed` | The configuration transaction finalized; the launch transaction is pending. |
-| `confirmed` | The coin exists. It appears on the site shortly. |
-| `failed` | A transaction failed on chain. |
-| `expired` | The transactions can no longer land (proved on two independent providers: the deployment's primary and recovery RPCs must be different providers, compared by hostname). |
+| `unknown`, `config_landed` | Poll every few seconds. The launch is unresolved. |
+| `confirmed` | Save the mint and receipt. Stop retrying. |
+| `failed`, `expired` | Prepare again only if `retry` is `pool` or `both`. |
 
-When `retry` is not `null`, call prepare again with a fresh signed request using the **same** `baseMint`, `config`, upload and quote. `"pool"` means a configuration now exists (usually one transaction next time); `"both"` means both will be rebuilt. Once this draft's own configuration transaction has landed, every retry stays in that configuration's price band and uses the earliest registered configuration for the band that still verifies (often the draft's own, but possibly an earlier one); if the quote price has since moved more than one band away, prepare answers `not_retryable` and the launch must start over with new keys. A config key that already holds a configuration created by another draft is refused (`draft_changed`).
+On an offered retry, reuse the original mint, config key, metadata and quote, with a fresh authorization and freshly signed prepared transactions. `pool` rebuilds the pool transaction; `both` rebuilds both. A landed creator config fixes the price band; a later move of more than one band makes the launch `not_retryable`. Start a new mint/config only when recovery requires it.
 
-### Launch error codes
-
-| code | status | meaning |
-| --- | --- | --- |
-| `request_invalid` | 422 | Malformed body or field. |
-| `signature_invalid` | 401 | Wrong message or key. |
-| `authorization_expired` | 401 | `issuedAt` outside the accepted window. |
-| `origin_forbidden` | 403 | A browser `Origin` from another site. |
-| `network_changed` | 409 | `deploymentId` or namespace is not this deployment. |
-| `metadata_required` | 409, 503 | Prepare: upload missing, not owned by the wallet, or removed (409). Submit: the upload is no longer available (503). Upload again and use a new mint. |
-| `draft_changed` | 409 | A different quote, type, upload or config key for this mint, or a config key that already holds a configuration another draft created. Use a new mint and config key. |
-| `already_submitted` | 409 | A transaction for this launch was already accepted. Poll status. |
-| `not_retryable` | 409 | This launch cannot be rebuilt (for example the price moved more than one band since its own configuration landed). Start with a new mint and config key. |
-| `launch_limit`, `upload_limit` | 429 | Per-wallet daily limit (defaults: 25 launches, 30 uploads per day). |
-| `rate_limited` | 429 | Too many requests (reserved for request-rate limits). |
-| `quote_unpriced` | 422 | The price provider does not price this token (or stopped pricing it), so it can't be a pair. |
-| `quote_illiquid` | 422 | The price provider reports less than $25,000 of liquidity behind this token's price, so it can't be a pair. |
-| `price_pending` | 503 | Estimate: the pair token's USD price is being fetched for the first time (or again). Ask again in a few seconds. |
-| `price_unavailable` | 503 | The pair token's USD price can't be used right now (the provider is unavailable, or a large price move awaits confirmation). Retry later. |
-| `unsupported_quote` | 422 | The quote token can't be used as a pair. |
-| `standard_pair_sol` | 422 | A standard coin with a pair token other than SOL. Pair it with SOL, or launch a reward coin. |
-| `transfer_fee_quote_unsupported` | 422 | The quote token has the transfer fee extension (even at a zero fee). Such pairs need Meteora program releases this network doesn't run yet (DBC 0.2.2 and DAMM v2 0.2.5; mainnet runs 0.2.1 and 0.2.4). The quote check reports `requires-program-upgrade`. |
-| `first_buy_too_large`, `first_buy_invalid` | 422 | Initial buy exceeds the curve or is too small. |
-| `insufficient_funds` | 422 | The wallet can't cover the rent, fees and initial buy (checked when prepare builds the transactions). |
-| `estimate_changed` | 409 | Prepare again. |
-| `estimate_expired`, `transaction_expired` | 409 | Prepare again (the prepared draft is older than 120 seconds, its blockhash expired, or the signed wire belongs to an earlier attempt or already failed on chain). |
-| `draft_not_found`, `draft_not_ready` | 404, 409 | Submit doesn't match a prepared launch. |
-| `not_found` | 404 | Status check for a launch (mint and signature) that was never submitted, or an upload that does not exist. |
-| `conflict` | 409 | The launch changed while it was being saved. Check its status. |
-| `transaction_invalid`, `transaction_mismatch` | 422 | Signed wire malformed or different from the prepared launch. |
-| `image_invalid` | 422 | Image unreadable, too large or of another type. |
-| `request_too_large` | 413 | Request body too large. |
-| `unavailable` | 503 | Temporarily unavailable; retry later. |
+After a timeout, check the existing launch before replacing anything. `unknown` does not mean failed. See [Errors and limits](/guides/errors) for HTTP retries.

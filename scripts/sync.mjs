@@ -12,11 +12,9 @@ const contract = await read('docs/openapi.json');
 const sections = new Map([...api.matchAll(/^## (.+)\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)].map(match => [match[1], match[2].trim()]));
 
 const guides = [
-  ['Basics', 'basics', 'API basics', 'Production origin, deployment identity, JSON responses and server time.'],
-  ['Amounts and decimals', 'amounts', 'Amounts and decimals', 'Represent token amounts exactly with integer strings in base units.'],
-  ['Launching coins', 'launch', 'Launch a coin', 'The complete wallet-authorized launch protocol, from artwork to confirmation.'],
-  ['Errors', 'errors', 'Error codes', 'Branch on stable machine-readable codes and recover from transient failures.'],
-  ['Rate limits', 'rate-limits', 'Rate limits', 'Respect request budgets, per-wallet quotas and retry instructions.'],
+  ['Quickstart', 'index', 'Quickstart', 'Base URL and first request.'],
+  ['Launching coins', 'guides/launch', 'Launch a coin', 'Upload metadata, sign, submit and confirm.'],
+  ['Errors and limits', 'guides/errors', 'Errors and limits', 'Error codes, retries and request limits.'],
 ];
 const generated = {};
 const frontmatter = (title, description) => `---\ntitle: ${JSON.stringify(title)}\ndescription: ${JSON.stringify(description)}\n---\n\n`;
@@ -24,14 +22,12 @@ function adapt(text) {
   return text
     .replaceAll('https://runners.example', 'https://runners.family')
     .replaceAll('[Errors](#errors)', '[Errors](/guides/errors)')
-    .replaceAll('[Amounts](#amounts-and-decimals)', '[Amounts](/guides/amounts)')
-    .replaceAll(' (see [Creator fees](#creator-fees))', '')
     .trim();
 }
 for (const [section, slug, title, description] of guides) {
   if (!sections.has(section)) throw new Error(`Missing canonical section: ${section}`);
   let body = sections.get(section);
-  generated[`guides/${slug}.mdx`] = frontmatter(title, description) + adapt(body) + '\n';
+  generated[`${slug}.mdx`] = frontmatter(title, description) + adapt(body) + '\n';
 }
 const spec = JSON.parse(contract);
 const launchPaths = ['/api/deployment', '/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/submit', '/api/launch/confirm'];

@@ -1,36 +1,53 @@
 ---
-title: "Error codes"
-description: "Branch on stable machine-readable codes and recover from transient failures."
+title: "Errors and limits"
+description: "Error codes, retries and request limits."
 ---
 
-| code | status | meaning |
+Errors return `{"code":"...","error":"..."}`. Branch on `code`, not the human-readable message.
+
+### Retry rules
+
+- `429`: wait for `Retry-After`, then back off with jitter.
+- `502`, `503`, `504`: back off; after a possible submission, confirm the existing launch before rebuilding.
+- Validation or signature errors: fix the request. Expired authorization needs a fresh challenge and signature.
+
+### Error codes
+
+| Code | HTTP | Action or cause |
 | --- | --- | --- |
-| `request_invalid` | 422 | Malformed body or field. |
-| `signature_invalid` | 401 | Wrong message or key. |
-| `authorization_expired` | 401 | `issuedAt` outside the accepted window. |
-| `origin_forbidden` | 403 | A browser `Origin` from another site. |
-| `network_changed` | 409 | `deploymentId` or namespace is not this deployment. |
-| `metadata_required` | 409, 503 | Prepare: upload missing, not owned by the wallet, or removed (409). Submit: the upload is no longer available (503). Upload again and use a new mint. |
-| `draft_changed` | 409 | A different quote, type, upload or config key for this mint, or a config key that already holds a configuration another draft created. Use a new mint and config key. |
-| `already_submitted` | 409 | A transaction for this launch was already accepted. Poll status. |
-| `not_retryable` | 409 | This launch cannot be rebuilt (for example the price moved more than one band since its own configuration landed). Start with a new mint and config key. |
-| `launch_limit`, `upload_limit` | 429 | Per-wallet daily limit (defaults: 25 launches, 30 uploads per day). |
-| `rate_limited` | 429 | Too many requests (reserved for request-rate limits). |
-| `quote_unpriced` | 422 | The price provider does not price this token (or stopped pricing it), so it can't be a pair. |
-| `quote_illiquid` | 422 | The price provider reports less than $25,000 of liquidity behind this token's price, so it can't be a pair. |
-| `price_pending` | 503 | Estimate: the pair token's USD price is being fetched for the first time (or again). Ask again in a few seconds. |
-| `price_unavailable` | 503 | The pair token's USD price can't be used right now (the provider is unavailable, or a large price move awaits confirmation). Retry later. |
-| `unsupported_quote` | 422 | The quote token can't be used as a pair. |
-| `standard_pair_sol` | 422 | A standard coin with a pair token other than SOL. Pair it with SOL, or launch a reward coin. |
-| `transfer_fee_quote_unsupported` | 422 | The quote token has the transfer fee extension (even at a zero fee). Such pairs need Meteora program releases this network doesn't run yet (DBC 0.2.2 and DAMM v2 0.2.5; mainnet runs 0.2.1 and 0.2.4). The quote check reports `requires-program-upgrade`. |
-| `first_buy_too_large`, `first_buy_invalid` | 422 | Initial buy exceeds the curve or is too small. |
-| `insufficient_funds` | 422 | The wallet can't cover the rent, fees and initial buy (checked when prepare builds the transactions). |
-| `estimate_changed` | 409 | Prepare again. |
-| `estimate_expired`, `transaction_expired` | 409 | Prepare again (the prepared draft is older than 120 seconds, its blockhash expired, or the signed wire belongs to an earlier attempt or already failed on chain). |
-| `draft_not_found`, `draft_not_ready` | 404, 409 | Submit doesn't match a prepared launch. |
-| `not_found` | 404 | Status check for a launch (mint and signature) that was never submitted, or an upload that does not exist. |
-| `conflict` | 409 | The launch changed while it was being saved. Check its status. |
-| `transaction_invalid`, `transaction_mismatch` | 422 | Signed wire malformed or different from the prepared launch. |
-| `image_invalid` | 422 | Image unreadable, too large or of another type. |
-| `request_too_large` | 413 | Request body too large. |
-| `unavailable` | 503 | Temporarily unavailable; retry later. |
+| `request_invalid` | 422 | Correct malformed fields. |
+| `signature_invalid` | 401 | Check message bytes, normalization and signing key. |
+| `authorization_expired` | 401 | Refresh server timestamp and sign again. |
+| `origin_forbidden` | 403 | Omit a foreign browser `Origin` header. |
+| `network_changed` | 409 | Refresh deployment identity. |
+| `metadata_required` | 409, 503 | Upload missing, unavailable or owned by another wallet. Upload again and use a new mint. |
+| `draft_changed` | 409 | Draft fields or config ownership conflict. Use a new mint/config. |
+| `already_submitted` | 409 | Confirm the existing launch. |
+| `not_retryable` | 409 | Recovery is unavailable. Use a new mint/config. |
+| `launch_limit`, `upload_limit`, `rate_limited` | 429 | Wait for the quota or request budget to reset. |
+| `quote_unpriced`, `quote_illiquid` | 422 | Quote cannot be priced or has less than $25,000 price liquidity. Choose a supported quote. |
+| `price_pending`, `price_unavailable` | 503 | Retry after the quote price becomes available. |
+| `unsupported_quote`, `transfer_fee_quote_unsupported` | 422 | Choose a supported quote token. |
+| `standard_pair_sol` | 422 | Standard coins require SOL. |
+| `first_buy_too_large`, `first_buy_invalid` | 422 | Correct the initial buy amount. |
+| `insufficient_funds` | 422 | Fund rent, fees and the initial buy. |
+| `estimate_changed`, `estimate_expired`, `transaction_expired` | 409 | Prepare and sign fresh transactions; resolve any submitted attempt first. |
+| `draft_not_found`, `draft_not_ready` | 404, 409 | Submit does not match a ready draft. |
+| `not_found` | 404 | Upload or submitted launch was not found. |
+| `conflict` | 409 | Check launch status before retrying. |
+| `transaction_invalid`, `transaction_mismatch` | 422 | Wire is malformed or differs from prepare. |
+| `image_invalid` | 422 | Check image bytes, type and dimensions. |
+| `request_too_large` | 413 | Reduce the request size. |
+| `unavailable` | 503 | Retry later. |
+
+### Limits
+
+Default request limits apply per client address:
+
+| Operation | Limit | Burst |
+| --- | --- | --- |
+| Prepare, submit, estimate | 30/minute | 15 |
+| Metadata upload | 12/10 minutes | 6 |
+| Confirm | 60/minute | 30 |
+
+Per-wallet rolling daily defaults: **25 launch drafts** and **30 metadata uploads**. Request-rate responses expose `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `RateLimit-Policy` and `Retry-After`. Operators can override defaults; follow response headers.

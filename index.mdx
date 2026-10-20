@@ -1,57 +1,21 @@
 ---
-title: "Launch with RUNNERS"
-description: "Launch Solana coins from your own agent, bot or application."
-icon: "code"
+title: "Quickstart"
+description: "Base URL and first request."
 ---
 
-## Your agent. Your wallet. Your launch.
+**Base URL:** `https://runners.family`. No API key or account is required. Authorize writes with your Solana wallet and keep private keys locally.
 
-Create a Solana coin through the same launch flow used by the RUNNERS website, using ordinary HTTP requests from your own agent or bot.
+### First request
 
-The API runs at **`https://runners.family`**. No account, API key, cookie or browser session is needed. Your agent keeps its private keys locally and authorizes writes with wallet signatures.
+```bash
+curl https://runners.family/api/deployment
+curl https://runners.family/api/metadata
+```
 
-<CardGroup cols={2}>
-  <Card title="Launch a coin" icon="rocket" href="/guides/launch">
-    Upload artwork, prepare transactions, sign locally and follow confirmation.
-  </Card>
-  <Card title="Make your first request" icon="terminal" href="/quickstart">
-    Check the network and request a metadata challenge with curl or JavaScript.
-  </Card>
-  <Card title="Sign with your wallet" icon="key" href="/guides/authentication">
-    Authorize metadata and preparation while keeping private keys local.
-  </Card>
-  <Card title="Recover safely" icon="rotate-left" href="/guides/recovery">
-    Resolve uncertain submissions before creating a replacement.
-  </Card>
-</CardGroup>
+Check `network`, `genesisHash` and `transactionsEnabled`. Match your RPC's genesis hash before signing. The metadata response supplies `deploymentId`, `appOrigin` and `issuedAt` for authorization.
 
-## How a launch works
+Follow [Launch a coin](/guides/launch) to upload metadata, prepare transactions, sign, submit and confirm. Requests use mainnet; signed submissions can spend SOL and create a coin.
 
-1. Get an upload challenge and sign the metadata authorization.
-2. Upload the coin's image and normalized details.
-3. Generate and retain the mint and configuration keypairs locally.
-4. Sign a preparation request and receive the unsigned launch transactions.
-5. Inspect the transactions, sign with the listed keys and submit them.
-6. Poll confirmation until the outcome is known.
+After launch, use the confirmed mint with [Jupiter](https://jup.ag) or a compatible DEX aggregator. Availability depends on indexing, liquidity and routing support.
 
-A launch uses one transaction when a shared configuration is available, or two when the creator must first create one. An optional first buy runs inside the pool-creation transaction.
-
-## After your launch
-
-Use the confirmed mint address to find your coin on [Jupiter](https://jup.ag) and other DEX aggregators that support its Meteora pool. Availability depends on each aggregator's indexing, liquidity and routing support. RUNNERS coins begin on Meteora DBC and graduate to DAMM v2 when their curve completes.
-
-This API covers creating the coin and confirming its launch. Use your preferred aggregator for subsequent discovery and trading.
-
-<Note>
-  The API reference playground sends real requests to mainnet. Submitting valid signed launch transactions can create a coin and spend the approved launch costs and first buy. Never paste a private key or seed phrase into the playground.
-</Note>
-
-## Built for agents
-
-- JSON requests and responses, with amounts expressed as integer strings.
-- Stable error codes, rate-limit headers and server timestamps.
-- Wallet-authorized metadata publishing and launch preparation.
-- Durable signed submissions and explicit confirmation/recovery states.
-- A [launch-only OpenAPI 3.1 contract](/openapi.json), plus Mintlify's generated `/llms.txt` and Markdown page exports for agent readers.
-
-Start with [authentication](/guides/authentication), [amounts](/guides/amounts) and [rate limits](/guides/rate-limits).
+For agents: [OpenAPI](/openapi.json) · [Documentation index](https://docs.runners.family/llms.txt).
