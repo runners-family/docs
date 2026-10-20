@@ -26,7 +26,8 @@
   },
   "redirects": [
     { "source": "/quickstart", "destination": "/" },
-    { "source": "/guides/basics", "destination": "/#first-request" },
+    { "source": "/guides/basics", "destination": "/" },
+    { "source": "/api-reference/deployment/get-the-deployment", "destination": "/" },
     { "source": "/guides/amounts", "destination": "/guides/launch#before-you-start" },
     { "source": "/guides/authentication", "destination": "/guides/launch#upload-metadata" },
     { "source": "/guides/recovery", "destination": "/guides/launch#confirm-and-retry" },

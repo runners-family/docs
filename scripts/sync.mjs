@@ -12,7 +12,7 @@ const contract = await read('docs/openapi.json');
 const sections = new Map([...api.matchAll(/^## (.+)\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)].map(match => [match[1], match[2].trim()]));
 
 const guides = [
-  ['Quickstart', 'index', 'Quickstart', 'Base URL and first request.'],
+  ['Quickstart', 'index', 'Launch API', 'Create a Solana coin from your agent or application.'],
   ['Launching coins', 'guides/launch', 'Launch a coin', 'Upload metadata, sign, submit and confirm.'],
   ['Errors and limits', 'guides/errors', 'Errors and limits', 'Error codes, retries and request limits.'],
 ];
@@ -30,13 +30,13 @@ for (const [section, slug, title, description] of guides) {
   generated[`${slug}.mdx`] = frontmatter(title, description) + adapt(body) + '\n';
 }
 const spec = JSON.parse(contract);
-const launchPaths = ['/api/deployment', '/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/submit', '/api/launch/confirm'];
+const launchPaths = ['/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/submit', '/api/launch/confirm'];
 spec.paths = Object.fromEntries(launchPaths.map(path => {
   if (!spec.paths[path]) throw new Error(`Missing launch endpoint: ${path}`);
   return [path, spec.paths[path]];
 }));
 spec.info = { title: 'RUNNERS Launch API', version: spec.info.version, summary: 'Launch a Solana coin from an agent or bot.', description: 'Upload wallet-authorized metadata, estimate launch costs, prepare unsigned launch transactions, sign locally, submit and confirm. All amounts use integer base-unit strings. No website session or integrator API key is required. See the Launch a coin guide for exact authorization messages.' };
-spec.tags = spec.tags.filter(tag => ['Launch', 'Deployment'].includes(tag.name));
+spec.tags = spec.tags.filter(tag => tag.name === 'Launch');
 // Only include components reachable from launch operations; filtering paths alone would
 // still publish unrelated trading/market/fee schemas in the downloadable contract.
 const sourceComponents = spec.components;

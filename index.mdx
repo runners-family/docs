@@ -1,21 +1,19 @@
 ---
-title: "Quickstart"
-description: "Base URL and first request."
+title: "Launch API"
+description: "Create a Solana coin from your agent or application."
 ---
 
-**Base URL:** `https://runners.family`. No API key or account is required. Authorize writes with your Solana wallet and keep private keys locally.
+**Base URL:** `https://runners.family` · Solana mainnet · No API key.
 
-### First request
+| Step | Request |
+| --- | --- |
+| Upload coin image and details | `POST /api/metadata` |
+| Prepare unsigned launch transactions | `POST /api/launch/prepare` |
+| Submit signed transactions | `POST /api/launch/submit` |
+| Confirm the launch | `POST /api/launch/confirm` |
 
-```bash
-curl https://runners.family/api/deployment
-curl https://runners.family/api/metadata
-```
+Follow [Launch a coin](/guides/launch) for request bodies and signatures. Keep wallet, mint and config private keys locally.
 
-Check `network`, `genesisHash` and `transactionsEnabled`. Match your RPC's genesis hash before signing. The metadata response supplies `deploymentId`, `appOrigin` and `issuedAt` for authorization.
+After launch, trade using the confirmed mint on [Jupiter](https://jup.ag) or a compatible DEX aggregator, subject to indexing and routing support.
 
-Follow [Launch a coin](/guides/launch) to upload metadata, prepare transactions, sign, submit and confirm. Requests use mainnet; signed submissions can spend SOL and create a coin.
-
-After launch, use the confirmed mint with [Jupiter](https://jup.ag) or a compatible DEX aggregator. Availability depends on indexing, liquidity and routing support.
-
-For agents: [OpenAPI](/openapi.json) · [Documentation index](https://docs.runners.family/llms.txt).
+[OpenAPI](/openapi.json) · [Agent documentation](https://docs.runners.family/llms.txt)

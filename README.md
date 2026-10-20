@@ -22,7 +22,7 @@ Open the localhost URL printed by Mintlify. `npm run validate` checks navigation
 
 ## Content and maintenance
 
-- Three guides: Quickstart, Launch a coin, and Errors and limits. All are synchronized from the RUNNERS application's `docs/api.md`.
+- Three guides: Launch API, Launch a coin, and Errors and limits. All are synchronized from the RUNNERS application's `docs/api.md`.
 - `openapi.json`: the complete launch-only endpoint reference, synchronized from the application's contract. It retains the full request/response schemas.
 - `source-manifest.json`: hashes for the canonical inputs and generated output. No production secrets or runtime configuration are included.
 - `scripts/check.mjs`: catches broken navigation, contract references, placeholder hostnames and, when the application source is available, stale generated docs.

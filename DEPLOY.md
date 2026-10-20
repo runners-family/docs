@@ -30,9 +30,9 @@ Reference: [Mintlify custom domains](https://www.mintlify.com/docs/deploy/custom
 
 - The home page says RUNNERS, not Mintlify Starter Kit.
 - The Guides tab includes the complete launch, signing, recovery, rate-limit and error guides.
-- API reference lists only launch and required metadata/deployment operations.
+- API reference lists only launch and metadata operations.
 - API reference requests target `https://runners.family`, never the docs domain.
-- Read-only `GET /api/deployment` works in the playground. Check proxy behavior before advertising signed write operations as tested.
+- The upload challenge (`GET /api/metadata`) returns only its signing context. Check proxy behavior before advertising signed write operations as tested.
 - `/openapi.json` contains the expected API server and `/llms.txt` lists the published guides.
 - Follow a link to the complete launch guide and a link to the error codes; confirm both work on a mobile screen too.
 

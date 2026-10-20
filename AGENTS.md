@@ -19,14 +19,14 @@ This repository hosts public API documentation on Mintlify Starter. It does not 
 
 - Use “coin” for a launched asset, “quote token” for its pair, “creator” for the launching wallet and “atoms” for integer base units.
 - Use active voice, concise sentences and sentence case headings.
-- Keep the site to three guides (Quickstart, Launch a coin, Errors and limits) plus the API reference. State signing, amounts, retries and limits once in the relevant section. Avoid marketing slogans, repeated overviews, decorative cards and separate pages for a few paragraphs.
+- Keep the site to three guides (Launch API, Launch a coin, Errors and limits) plus the API reference. State signing, amounts, retries and limits once in the relevant section. Avoid marketing slogans, repeated overviews, decorative cards and separate pages for a few paragraphs.
 - Use code formatting for paths, amounts, identifiers and commands.
 - Explain that launch preparation returns unsigned transactions; it does not execute a launch.
 - Treat `unknown` transaction status as unresolved. Never recommend replacing a transaction until its outcome is known.
 
 ## Boundaries
 
-- Publish only coin-launch integration behavior: deployment identity, metadata, estimates, preparation, submission and confirmation. Exclude trading, market-data, creator-fee and generic-relay operations and their schemas.
+- Publish only coin-launch integration behavior: metadata, estimates, preparation, submission and confirmation. Exclude the website deployment/configuration endpoint, RPC/WS URLs, operator configuration, trading, market-data, creator-fee and generic-relay operations and their schemas. The homepage starts with the launch workflow; upload challenges belong in the signing instructions.
 - Never copy secrets, environment files, private RPC URLs, operator details, wallet keypairs, local state or private evidence from the application repository.
 - Never ask readers to paste private keys into the API playground.
 - Preserve repository visibility. Do not publish application source or create a new public repository without explicit owner approval.

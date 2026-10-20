@@ -16,53 +16,9 @@
     {
       "name": "Launch",
       "description": "Launch a coin from any HTTP client with an ed25519 keypair: upload the image and details, prepare (one transaction when a shared config exists for the quote token's price band, otherwise two), sign with the listed signers, submit (optionally relayed) and confirm. Every write is authorized by a signature from the creator's wallet key. See the Launch a coin guide for the exact messages to sign."
-    },
-    {
-      "name": "Deployment",
-      "description": "Network and deployment identity required to prepare a launch."
     }
   ],
   "paths": {
-    "/api/deployment": {
-      "get": {
-        "tags": [
-          "Deployment"
-        ],
-        "operationId": "getDeployment",
-        "summary": "Get the deployment",
-        "description": "The network, genesis hash, program addresses and public RPC endpoints this deployment serves. `transactionsEnabled` is false while trading is paused (for example during a provider outage or before every prerequisite is in place).",
-        "x-runners-rate-class": "read",
-        "responses": {
-          "200": {
-            "description": "The public deployment.",
-            "headers": {
-              "RateLimit-Limit": {
-                "$ref": "#/components/headers/RateLimit-Limit"
-              },
-              "RateLimit-Remaining": {
-                "$ref": "#/components/headers/RateLimit-Remaining"
-              },
-              "RateLimit-Reset": {
-                "$ref": "#/components/headers/RateLimit-Reset"
-              },
-              "RateLimit-Policy": {
-                "$ref": "#/components/headers/RateLimit-Policy"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicDeployment"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          }
-        }
-      }
-    },
     "/api/metadata": {
       "get": {
         "tags": [
@@ -529,216 +485,25 @@
     }
   },
   "components": {
-    "headers": {
-      "RateLimit-Limit": {
-        "description": "Requests the client may make at once in this route class (bucket size).",
-        "schema": {
-          "type": "integer"
-        }
-      },
-      "RateLimit-Remaining": {
-        "description": "Requests available now.",
-        "schema": {
-          "type": "integer"
-        }
-      },
-      "RateLimit-Reset": {
-        "description": "Seconds until the bucket is full again.",
-        "schema": {
-          "type": "integer"
-        }
-      },
-      "RateLimit-Policy": {
-        "description": "`<requests>;w=<seconds>;burst=<burst>`: the sustained rate and the bucket size.",
-        "schema": {
-          "type": "string"
-        },
-        "example": "600;w=60;burst=120"
-      },
-      "Retry-After": {
-        "description": "Seconds to wait before retrying.",
-        "schema": {
-          "type": "integer"
-        }
-      }
-    },
     "schemas": {
-      "PublicDeployment": {
+      "MetadataChallenge": {
         "type": "object",
         "required": [
-          "schemaVersion",
-          "network",
-          "revision",
-          "genesisHash",
-          "rpcUrl",
-          "subscriptionsUrl",
-          "programs",
-          "rewards",
-          "operator",
-          "compatibility",
-          "services",
-          "id",
-          "walletChain",
-          "transactionsEnabled"
+          "deploymentId",
+          "appOrigin",
+          "issuedAt"
         ],
         "properties": {
-          "schemaVersion": {
-            "const": 1
-          },
-          "network": {
-            "type": "string",
-            "enum": [
-              "devnet",
-              "mainnet"
-            ]
-          },
-          "revision": {
+          "deploymentId": {
             "type": "string"
           },
-          "genesisHash": {
-            "type": "string",
-            "description": "Check that your RPC serves this genesis hash before sending."
+          "appOrigin": {
+            "type": "string"
           },
-          "rpcUrl": {
-            "type": "string",
-            "format": "uri",
-            "description": "Public RPC endpoint."
-          },
-          "subscriptionsUrl": {
-            "type": "string",
-            "format": "uri"
-          },
-          "programs": {
-            "type": "object",
-            "required": [
-              "dbc",
-              "dammV2"
-            ],
-            "properties": {
-              "dbc": {
-                "$ref": "#/components/schemas/Address"
-              },
-              "dammV2": {
-                "$ref": "#/components/schemas/Address"
-              }
-            }
-          },
-          "rewards": {
-            "oneOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "runnersMint": {
-                    "$ref": "#/components/schemas/Address"
-                  },
-                  "burn": {
-                    "type": "object",
-                    "properties": {
-                      "program": {
-                        "$ref": "#/components/schemas/Address"
-                      },
-                      "binarySha256": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "description": "The RUNNERS token and its burn program, when configured."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "operator": {
-            "type": "object",
-            "properties": {
-              "feeClaimer": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/Address"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "leftoverReceiver": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/Address"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            }
-          },
-          "compatibility": {
-            "type": "object",
-            "properties": {
-              "sdkCommit": {
-                "type": "string"
-              },
-              "idlSha256": {
-                "type": "string"
-              },
-              "dbcBinarySha256": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "dammBinarySha256": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "verified": {
-                "type": "boolean"
-              }
-            }
-          },
-          "services": {
-            "type": "object",
-            "properties": {
-              "configsReady": {
-                "type": "boolean"
-              },
-              "metadataReady": {
-                "type": "boolean"
-              },
-              "marketReady": {
-                "type": "boolean"
-              }
-            }
-          },
-          "id": {
-            "type": "string",
-            "description": "`<network>:<genesisHash>`; every response's `deploymentId`. It names the chain and stays the same when the manifest `revision` changes."
-          },
-          "walletChain": {
-            "type": "string",
-            "enum": [
-              "solana:devnet",
-              "solana:mainnet"
-            ]
-          },
-          "transactionsEnabled": {
-            "type": "boolean",
-            "description": "False while launching and trading are paused."
+          "issuedAt": {
+            "type": "integer"
           }
         }
-      },
-      "Address": {
-        "type": "string",
-        "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$",
-        "description": "Base58 Solana address.",
-        "examples": [
-          "So11111111111111111111111111111111111111112"
-        ]
       },
       "Error": {
         "type": "object",
@@ -762,25 +527,6 @@
           "error": {
             "type": "string",
             "description": "Plain-language explanation."
-          }
-        }
-      },
-      "MetadataChallenge": {
-        "type": "object",
-        "required": [
-          "deploymentId",
-          "appOrigin",
-          "issuedAt"
-        ],
-        "properties": {
-          "deploymentId": {
-            "type": "string"
-          },
-          "appOrigin": {
-            "type": "string"
-          },
-          "issuedAt": {
-            "type": "integer"
           }
         }
       },
@@ -812,6 +558,14 @@
             "type": "object"
           }
         }
+      },
+      "Address": {
+        "type": "string",
+        "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$",
+        "description": "Base58 Solana address.",
+        "examples": [
+          "So11111111111111111111111111111111111111112"
+        ]
       },
       "LaunchError": {
         "type": "object",
@@ -1629,6 +1383,39 @@
             }
           }
         }
+      }
+    },
+    "headers": {
+      "Retry-After": {
+        "description": "Seconds to wait before retrying.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Limit": {
+        "description": "Requests the client may make at once in this route class (bucket size).",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Remaining": {
+        "description": "Requests available now.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Reset": {
+        "description": "Seconds until the bucket is full again.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Policy": {
+        "description": "`<requests>;w=<seconds>;burst=<burst>`: the sustained rate and the bucket size.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "600;w=60;burst=120"
       }
     }
   }
