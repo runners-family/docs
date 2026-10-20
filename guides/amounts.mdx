@@ -1,0 +1,20 @@
+---
+title: "Amounts and decimals"
+description: "Represent token amounts exactly with integer strings in base units."
+---
+
+Token amounts are integers in **atoms**, the token's smallest unit, sent as decimal strings so that 64-bit values stay exact. One whole token is `10^decimals` atoms.
+
+- `firstBuy` is the creator's optional launch buy in quote-token atoms. Use `"0"` for no first buy.
+- A SOL launch uses 9 decimals: `"100000000"` means 0.1 SOL.
+- Rent and network/priority fees are in lamports. One SOL is 1,000,000,000 lamports.
+- Use the selected quote token's actual on-chain decimals for reward-coin launches.
+
+```ts
+// Whole tokens to atoms without floating point: "1.5" with 6 decimals -> "1500000".
+function toAtoms(amount: string, decimals: number) {
+  const [whole, fraction = ""] = amount.split(".")
+  if (fraction.length > decimals) throw new Error("too many decimal places")
+  return (BigInt(whole) * 10n ** BigInt(decimals) + BigInt(fraction.padEnd(decimals, "0") || "0")).toString()
+}
+```

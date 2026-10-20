@@ -1,72 +1,31 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mintlify Starter Kit",
-  "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
-  },
-  "favicon": "/favicon.svg",
-  "navigation": {
-    "pages": [
-      {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
-        ]
-      }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
+  "name": "RUNNERS Launch API",
+  "description": "Launch Solana coins from your own agent, bot or application.",
+  "colors": { "primary": "#DCFF3F", "light": "#DCFF3F", "dark": "#0C41F0" },
+  "background": { "color": { "light": "#F2F1EB", "dark": "#101214" } },
+  "appearance": { "default": "dark" },
+  "fonts": { "family": "Inter" },
+  "favicon": "/assets/favicon.svg",
+  "logo": { "light": "/assets/logo-light.svg", "dark": "/assets/logo-dark.svg", "href": "/" },
   "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:support@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.mintlify.com"
-    }
+    "links": [{ "label": "Open RUNNERS", "href": "https://runners.family" }],
+    "primary": { "type": "button", "label": "Launch a coin", "href": "https://runners.family/create" }
   },
-  "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "chatgpt",
-      "claude",
-      "perplexity",
-      "mcp",
-      "cursor",
-      "vscode"
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          { "group": "Start building", "pages": ["index", "quickstart", "guides/basics", "guides/amounts", "guides/authentication"] },
+          { "group": "Launch coins", "pages": ["guides/launch", "guides/recovery"] },
+          { "group": "Operate your integration", "pages": ["guides/rate-limits", "guides/errors"] }
+        ]
+      },
+      { "tab": "API reference", "openapi": "/openapi.json" }
     ]
   },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
-  }
+  "api": { "playground": { "display": "interactive", "proxy": true } },
+  "footer": { "links": [{ "header": "RUNNERS", "items": [{ "label": "Launchpad", "href": "https://runners.family" }, { "label": "Launch API contract", "href": "/openapi.json" }] }] }
 }

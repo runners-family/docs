@@ -1,33 +1,27 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
+# RUNNERS developer documentation
 
-# Documentation project instructions
+This repository hosts public API documentation on Mintlify Starter. It does not host the RUNNERS backend. The production API origin is `https://runners.family`; do not replace it with the docs domain or invent an `api.runners.family` deployment.
 
-## About this project
+## Content and verification
 
-- This is a documentation site built on [Mintlify](https://mintlify.com)
-- Pages are MDX files with YAML frontmatter
-- Configuration lives in `docs.json`
-- Use the Mintlify MCP server, `https://mcp.mintlify.com`, to edit content and settings via MCP
-- Use the Mintlify docs MCP server, `https://www.mintlify.com/docs/mcp`, to query information about using Mintlify via MCP
+- Keep exact endpoint paths, message bytes, JSON field order, base-unit amounts and recovery rules aligned with the existing backend contract.
+- The canonical sources are `docs/api.md` and `docs/openapi.json` in the RUNNERS application. Refresh generated files with `RUNNERS_APP_DIR=/path/to/ui npm run sync`. Do not make conflicting manual changes to generated guide pages or schemas.
+- Run `npm run validate` before pushing. Preview with `npm run dev` when layout changes.
+- Mintlify deploys the connected default branch. Use the deployment status and actual dashboard URL to verify publication; do not infer the live subdomain from the repository name.
+- Maintain the free Starter configuration. Adding paid services, Amplify, AI add-ons or changing plan/account settings requires the owner's direction.
 
-## Terminology
+## Terminology and style
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+- Use “coin” for a launched asset, “quote token” for its pair, “creator” for the launching wallet and “atoms” for integer base units.
+- Use active voice, concise sentences and sentence case headings.
+- Use code formatting for paths, amounts, identifiers and commands.
+- Explain that launch preparation returns unsigned transactions; it does not execute a launch.
+- Treat `unknown` transaction status as unresolved. Never recommend replacing a transaction until its outcome is known.
 
-## Style preferences
+## Boundaries
 
-{/* Add any project-specific style rules below */}
-
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
-- Bold for UI elements: Click **Settings**
-- Code formatting for file names, commands, paths, and code references
-
-## Content boundaries
-
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+- Publish only coin-launch integration behavior: deployment identity, metadata, estimates, preparation, submission and confirmation. Exclude trading, market-data, creator-fee and generic-relay operations and their schemas.
+- Never copy secrets, environment files, private RPC URLs, operator details, wallet keypairs, local state or private evidence from the application repository.
+- Never ask readers to paste private keys into the API playground.
+- Preserve repository visibility. Do not publish application source or create a new public repository without explicit owner approval.
+- RUNNERS token eligibility and allocations are outside these launch API guides. Documentation changes must not alter launch rules, signing, claims or on-chain behavior.

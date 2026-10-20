@@ -1,0 +1,11 @@
+---
+title: "API basics"
+description: "Production origin, deployment identity, JSON responses and server time."
+---
+
+- **Base URL.** The app's origin, for example `https://runners.family`. Every path below is relative to it.
+- **Network.** One deployment serves one Solana network. `GET /api/deployment` returns `network` (`devnet` or `mainnet`), `genesisHash`, the DBC and DAMM v2 program addresses, a public `rpcUrl` and `transactionsEnabled` (false while transactions are paused). Check that the RPC you send to returns the same genesis hash.
+- **JSON.** Requests and responses are JSON. Errors are `{"code": "...", "error": "..."}`; branch on `code` (see [Errors](/guides/errors)). A gateway in front of the API may answer `502` or `504` with another body; treat those like `503`.
+- **No Origin header.** Agents and scripts send none. Wallet signatures authorize metadata uploads and launch preparation; signed transactions authorize launch execution. Foreign browser origins are refused on writes.
+- **Server time.** Responses carry `serverTime` (unix seconds) where it matters, and every response has a `Date` header. Compare deadlines such as `expiresAt` with `serverTime`, not with your own clock.
+- **No API key.** The API is keyless; limits apply per client address.

@@ -1,0 +1,1635 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RUNNERS Launch API",
+    "version": "1.2.0",
+    "summary": "Launch a Solana coin from an agent or bot.",
+    "description": "Upload wallet-authorized metadata, estimate launch costs, prepare unsigned launch transactions, sign locally, submit and confirm. All amounts use integer base-unit strings. No website session or integrator API key is required. See the Launch a coin guide for exact authorization messages."
+  },
+  "servers": [
+    {
+      "url": "https://runners.family",
+      "description": "RUNNERS production API (Solana mainnet)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Launch",
+      "description": "Launch a coin from any HTTP client with an ed25519 keypair: upload the image and details, prepare (one transaction when a shared config exists for the quote token's price band, otherwise two), sign with the listed signers, submit (optionally relayed) and confirm. Every write is authorized by a signature from the creator's wallet key. See the Launch a coin guide for the exact messages to sign."
+    },
+    {
+      "name": "Deployment",
+      "description": "Network and deployment identity required to prepare a launch."
+    }
+  ],
+  "paths": {
+    "/api/deployment": {
+      "get": {
+        "tags": [
+          "Deployment"
+        ],
+        "operationId": "getDeployment",
+        "summary": "Get the deployment",
+        "description": "The network, genesis hash, program addresses and public RPC endpoints this deployment serves. `transactionsEnabled` is false while trading is paused (for example during a provider outage or before every prerequisite is in place).",
+        "x-runners-rate-class": "read",
+        "responses": {
+          "200": {
+            "description": "The public deployment.",
+            "headers": {
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDeployment"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/metadata": {
+      "get": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "metadataChallenge",
+        "summary": "Values to sign for an upload",
+        "x-runners-rate-class": "read",
+        "responses": {
+          "200": {
+            "description": "Upload challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataChallenge"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "uploadMetadata",
+        "summary": "Upload a coin's image and details",
+        "description": "Multipart (`image`, `authorization` as a JSON string) or JSON `{ authorization, image: { type, base64 } }`. `authorization` = `{ owner, deploymentId, issuedAt, signatureBase64, metadata }`; the signed message is described in docs/api.md. Re-uploading the same content returns the same record.",
+        "x-runners-rate-class": "upload",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored upload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoredMetadata"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bad signature (`signature_invalid`) or expired authorization (`authorization_expired`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A different site's Origin (`origin_forbidden`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "`request_too_large`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`request_invalid` or `image_invalid`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`upload_limit` (per-wallet daily limit) or rate limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/metadata/{namespace}/{id}/{filename}": {
+      "get": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "getMetadataAsset",
+        "summary": "Read an uploaded image or metadata file",
+        "description": "",
+        "x-runners-rate-class": "read",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file."
+          },
+          "404": {
+            "description": "Not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/api/launch/estimate": {
+      "get": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "estimateLaunch",
+        "summary": "Launch terms and costs for a quote token right now",
+        "x-runners-rate-class": "launch",
+        "parameters": [
+          {
+            "name": "quote",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "rewards"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estimate.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchEstimate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`quote_unpriced`, `quote_illiquid`, `unsupported_quote`, `standard_pair_sol` (a standard coin paired with a token other than SOL), `transfer_fee_quote_unsupported` or `request_invalid`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "description": "`unavailable`, `price_unavailable`, or `price_pending`: the pair token's USD price is being fetched (an estimate never prices a token itself; it queues it). Ask again in a few seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/launch/prepare": {
+      "post": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "prepareLaunch",
+        "summary": "Prepare a launch and get its unsigned transactions",
+        "description": "Returns one transaction (pool + optional creator first buy) when a shared config exists for the quote token's price band, otherwise two (config, then pool). Sign each with its listed signers and submit. The curve is converted from the launch policy's USD targets with the pair token's stored USD price, refreshed weekly; a pair token used for the first time is priced once.",
+        "x-runners-rate-class": "launch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchPrepareRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prepared launch.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedLaunch"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`signature_invalid` or `authorization_expired`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`origin_forbidden`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`network_changed`, `metadata_required`, `draft_changed`, `already_submitted`, `not_retryable` or `estimate_expired`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`request_invalid`, `unsupported_quote`, `standard_pair_sol` (a standard coin paired with a token other than SOL), `transfer_fee_quote_unsupported` (the pair token has the transfer fee extension, which the network's Meteora programs cannot launch yet), `quote_unpriced` (the price provider does not price this pair token, so it cannot be a pair), `quote_illiquid` (less than $25,000 of liquidity behind its price, for a pair token that is not pre-warmed), `first_buy_invalid`, `first_buy_too_large` or `insufficient_funds`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`launch_limit` (per-wallet daily limit) or rate limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`, or `price_unavailable`: the pair token's USD price cannot be used right now (the provider is unavailable, or a move of more than 3x awaits its confirming observation 24 hours later). Retry later. A pair token without a usable stored price is priced here.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/launch/submit": {
+      "post": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "submitLaunch",
+        "summary": "Save (and optionally relay) the signed launch transactions",
+        "description": "The server verifies each wire byte for byte against what it prepared and stores both before anything is sent. Re-submitting the same wires is idempotent.",
+        "x-runners-rate-class": "launch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchSubmission"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchSubmitResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`origin_forbidden`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`draft_not_found`, `draft_not_ready`, `already_submitted` or `estimate_expired`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`transaction_invalid`, `transaction_mismatch` or `transaction_expired`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "description": "`unavailable`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/launch/confirm": {
+      "post": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "confirmLaunch",
+        "summary": "Check a launch's state",
+        "x-runners-rate-class": "status",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deploymentId",
+                  "baseMint",
+                  "signature"
+                ],
+                "properties": {
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "baseMint": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "signature": {
+                    "$ref": "#/components/schemas/Signature",
+                    "description": "The pool transaction's signature."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Launch state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "headers": {
+      "RateLimit-Limit": {
+        "description": "Requests the client may make at once in this route class (bucket size).",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Remaining": {
+        "description": "Requests available now.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Reset": {
+        "description": "Seconds until the bucket is full again.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Policy": {
+        "description": "`<requests>;w=<seconds>;burst=<burst>`: the sustained rate and the bucket size.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "600;w=60;burst=120"
+      },
+      "Retry-After": {
+        "description": "Seconds to wait before retrying.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "schemas": {
+      "PublicDeployment": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "network",
+          "revision",
+          "genesisHash",
+          "rpcUrl",
+          "subscriptionsUrl",
+          "programs",
+          "rewards",
+          "operator",
+          "compatibility",
+          "services",
+          "id",
+          "walletChain",
+          "transactionsEnabled"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "devnet",
+              "mainnet"
+            ]
+          },
+          "revision": {
+            "type": "string"
+          },
+          "genesisHash": {
+            "type": "string",
+            "description": "Check that your RPC serves this genesis hash before sending."
+          },
+          "rpcUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public RPC endpoint."
+          },
+          "subscriptionsUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "programs": {
+            "type": "object",
+            "required": [
+              "dbc",
+              "dammV2"
+            ],
+            "properties": {
+              "dbc": {
+                "$ref": "#/components/schemas/Address"
+              },
+              "dammV2": {
+                "$ref": "#/components/schemas/Address"
+              }
+            }
+          },
+          "rewards": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "runnersMint": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "burn": {
+                    "type": "object",
+                    "properties": {
+                      "program": {
+                        "$ref": "#/components/schemas/Address"
+                      },
+                      "binarySha256": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "description": "The RUNNERS token and its burn program, when configured."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operator": {
+            "type": "object",
+            "properties": {
+              "feeClaimer": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "leftoverReceiver": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "compatibility": {
+            "type": "object",
+            "properties": {
+              "sdkCommit": {
+                "type": "string"
+              },
+              "idlSha256": {
+                "type": "string"
+              },
+              "dbcBinarySha256": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dammBinarySha256": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "verified": {
+                "type": "boolean"
+              }
+            }
+          },
+          "services": {
+            "type": "object",
+            "properties": {
+              "configsReady": {
+                "type": "boolean"
+              },
+              "metadataReady": {
+                "type": "boolean"
+              },
+              "marketReady": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "`<network>:<genesisHash>`; every response's `deploymentId`. It names the chain and stays the same when the manifest `revision` changes."
+          },
+          "walletChain": {
+            "type": "string",
+            "enum": [
+              "solana:devnet",
+              "solana:mainnet"
+            ]
+          },
+          "transactionsEnabled": {
+            "type": "boolean",
+            "description": "False while launching and trading are paused."
+          }
+        }
+      },
+      "Address": {
+        "type": "string",
+        "pattern": "^[1-9A-HJ-NP-Za-km-z]{32,44}$",
+        "description": "Base58 Solana address.",
+        "examples": [
+          "So11111111111111111111111111111111111111112"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable code. Always present on /api/v1 routes and 429 responses.",
+            "enum": [
+              "request_invalid",
+              "request_too_large",
+              "origin_forbidden",
+              "not_found",
+              "method_not_allowed",
+              "rate_limited",
+              "unavailable"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "description": "Plain-language explanation."
+          }
+        }
+      },
+      "MetadataChallenge": {
+        "type": "object",
+        "required": [
+          "deploymentId",
+          "appOrigin",
+          "issuedAt"
+        ],
+        "properties": {
+          "deploymentId": {
+            "type": "string"
+          },
+          "appOrigin": {
+            "type": "string"
+          },
+          "issuedAt": {
+            "type": "integer"
+          }
+        }
+      },
+      "StoredMetadata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "imageUri": {
+            "type": "string"
+          },
+          "imageType": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        }
+      },
+      "LaunchError": {
+        "type": "object",
+        "required": [
+          "error",
+          "code"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "request_invalid",
+              "signature_invalid",
+              "authorization_expired",
+              "origin_forbidden",
+              "network_changed",
+              "unavailable",
+              "metadata_required",
+              "draft_changed",
+              "draft_not_found",
+              "draft_not_ready",
+              "already_submitted",
+              "not_retryable",
+              "launch_limit",
+              "upload_limit",
+              "price_unavailable",
+              "quote_unpriced",
+              "quote_illiquid",
+              "price_pending",
+              "price_changed",
+              "estimate_expired",
+              "estimate_changed",
+              "unsupported_quote",
+              "standard_pair_sol",
+              "transfer_fee_quote_unsupported",
+              "first_buy_too_large",
+              "first_buy_invalid",
+              "transaction_invalid",
+              "transaction_mismatch",
+              "transaction_expired",
+              "not_found",
+              "conflict",
+              "request_too_large",
+              "image_invalid",
+              "rate_limited",
+              "insufficient_funds"
+            ]
+          }
+        }
+      },
+      "LaunchEstimate": {
+        "type": "object",
+        "required": [
+          "deploymentId",
+          "quoteMint",
+          "mode",
+          "configInstructionBase64",
+          "quoteTokenProgram",
+          "tokenBadge",
+          "serverTime",
+          "validUntil",
+          "economics",
+          "costs",
+          "sharedConfig",
+          "transactionCount"
+        ],
+        "properties": {
+          "deploymentId": {
+            "type": "string"
+          },
+          "quoteMint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "rewards"
+            ]
+          },
+          "configInstructionBase64": {
+            "type": "string",
+            "contentEncoding": "base64"
+          },
+          "quoteTokenProgram": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "tokenBadge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "serverTime": {
+            "type": "integer"
+          },
+          "validUntil": {
+            "type": "integer",
+            "description": "Server time until which this estimate's terms are current: 120 seconds (earlier only if the stored pair-token price would become too old)."
+          },
+          "economics": {
+            "$ref": "#/components/schemas/LaunchEconomics"
+          },
+          "costs": {
+            "$ref": "#/components/schemas/LaunchCosts"
+          },
+          "sharedConfig": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The registered config the launch would use, or null when the creator would pay for the band's config."
+          },
+          "transactionCount": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "LaunchEconomics": {
+        "type": "object",
+        "description": "The launch terms the config encodes.",
+        "properties": {
+          "policyRevision": {
+            "type": "string"
+          },
+          "initialMarketCapUsd": {
+            "type": "number"
+          },
+          "graduationMarketCapUsd": {
+            "type": "number"
+          },
+          "migrationQuoteThreshold": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "curveFees": {
+            "$ref": "#/components/schemas/LaunchFeeShares"
+          },
+          "migratedFees": {
+            "$ref": "#/components/schemas/LaunchFeeShares"
+          },
+          "antiSniping": {
+            "type": "object",
+            "description": "Launch-protection fee: starts high and falls linearly to the curve fee within a few seconds. The creator's first buy in the pool transaction pays the curve fee."
+          },
+          "priceObservedAt": {
+            "type": "integer",
+            "description": "Unix seconds: when the price provider observed the pair token's stored USD price (refreshed weekly). Launches accept stored prices up to about 8 days old."
+          },
+          "priceBand": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer"
+              },
+              "referenceUsd": {
+                "type": "number"
+              },
+              "stepBps": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "Atoms": {
+        "type": "string",
+        "pattern": "^[0-9]{1,20}$",
+        "description": "Integer token amount in atoms (the token's smallest unit), as a decimal string. One whole token is 10^decimals atoms.",
+        "examples": [
+          "1000000"
+        ]
+      },
+      "LaunchFeeShares": {
+        "type": "object",
+        "required": [
+          "creatorBps",
+          "holderBps",
+          "platformBps",
+          "recipientBps",
+          "grossFeeNumerator",
+          "grossFeeBps"
+        ],
+        "properties": {
+          "creatorBps": {
+            "type": "number",
+            "description": "Basis points of trading volume; fractional where the creator's whole-percent share requires it (a standard coin's creator earns 49.5)."
+          },
+          "holderBps": {
+            "type": "number",
+            "description": "Basis points of trading volume; fractional where the creator's whole-percent share requires it (a standard coin's creator earns 49.5)."
+          },
+          "platformBps": {
+            "type": "number",
+            "description": "Basis points of trading volume; fractional where the creator's whole-percent share requires it (a standard coin's creator earns 49.5)."
+          },
+          "recipientBps": {
+            "type": "number",
+            "description": "Basis points of trading volume; fractional where the creator's whole-percent share requires it (a standard coin's creator earns 49.5)."
+          },
+          "grossFeeNumerator": {
+            "type": "string",
+            "description": "Fee numerator over 1e9."
+          },
+          "grossFeeBps": {
+            "type": "number"
+          },
+          "creatorTradingFeePercentage": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "DBC's native creator share: whole percent of the fee after the protocol share. 0 after graduation and for coins launched before revision v5."
+          },
+          "protocolFeeNumerator": {
+            "type": "string",
+            "description": "The protocol's share, as a fee numerator over 1e9 of trading volume."
+          },
+          "creatorFeeNumerator": {
+            "type": "string",
+            "description": "The creator's share, paid by the pool, as a fee numerator over 1e9 of trading volume."
+          },
+          "partnerFeeNumerator": {
+            "type": "string",
+            "description": "The partner fee the platform collects (holders plus platform), as a fee numerator over 1e9 of trading volume."
+          },
+          "holderFeeNumerator": {
+            "type": "string",
+            "description": "Holder rewards (reward coins), as a fee numerator over 1e9 of trading volume."
+          },
+          "platformFeeNumerator": {
+            "type": "string",
+            "description": "The platform's share, as a fee numerator over 1e9 of trading volume."
+          }
+        },
+        "description": "Shares of trading volume. From policy revision `pump-style-usd-airdrops-v5` the pool pays the creator natively (`creatorTradingFeePercentage` of the fee left after the protocol's 20%: 33 on standard coins, 0.495% of volume; 20 on reward coins, 0.5%); the platform collects only the rest (the partner fee). Earlier revisions omit the numerator fields."
+      },
+      "LaunchCosts": {
+        "type": "object",
+        "description": "Rent the creator locks when the launch lands, in lamports (network and priority fees are separate). configRent is \"0\" when a shared config already exists. firstBuyRent is the token account an initial buy creates: included in poolRent and totalRent only when the launch has an initial buy (prepare knows its firstBuy; an estimate does not, so add firstBuyRent to an estimate for a launch with an initial buy). Every coin is a Token-2022 mint with its metadata in the mint: no metadata account or metadata fee. Rent uses the network's current rate.",
+        "required": [
+          "configRent",
+          "poolRent",
+          "totalRent",
+          "firstBuyRent",
+          "wrappedSolRent"
+        ],
+        "properties": {
+          "configRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "poolRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "totalRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "firstBuyRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "wrappedSolRent": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Rent of the temporary wrapped-SOL account a SOL first buy opens and closes in the same transaction (refunded), in lamports."
+          }
+        }
+      },
+      "LaunchPrepareRequest": {
+        "type": "object",
+        "description": "The signed request fields in exactly this key order, plus `signatureBase64` (ed25519 over the message described in docs/api.md) and unsigned `options`.",
+        "required": [
+          "deploymentId",
+          "owner",
+          "baseMint",
+          "quoteMint",
+          "config",
+          "mode",
+          "metadataId",
+          "metadataNamespace",
+          "firstBuy",
+          "issuedAt",
+          "signatureBase64"
+        ],
+        "properties": {
+          "deploymentId": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "baseMint": {
+            "$ref": "#/components/schemas/Address",
+            "description": "Public key of a mint keypair the client generates and keeps."
+          },
+          "quoteMint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "config": {
+            "$ref": "#/components/schemas/Address",
+            "description": "Public key of a config keypair the client generates; it signs only when no shared config exists."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "rewards"
+            ],
+            "description": "`standard` coins are paired with SOL only (`quoteMint` So11111111111111111111111111111111111111112); `rewards` coins may use any supported pair token."
+          },
+          "metadataId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "metadataNamespace": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          },
+          "firstBuy": {
+            "$ref": "#/components/schemas/Atoms",
+            "description": "Creator's initial buy in quote-token atoms; \"0\" for none."
+          },
+          "issuedAt": {
+            "type": "integer"
+          },
+          "signatureBase64": {
+            "type": "string"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "priority": {
+                "$ref": "#/components/schemas/PriorityLevel"
+              },
+              "slippageBps": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5000
+              },
+              "buildTransactions": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "PriorityLevel": {
+        "type": "string",
+        "enum": [
+          "normal",
+          "fast",
+          "turbo"
+        ],
+        "description": "Priority fee level: the 50th, 75th or 95th percentile of recent fees paid for the same accounts, at least 1,000 / 10,000 / 100,000 micro-lamports per compute unit, and at most 50,000 / 200,000 / 1,000,000 lamports in total."
+      },
+      "PreparedLaunch": {
+        "type": "object",
+        "required": [
+          "status",
+          "deploymentId",
+          "owner",
+          "baseMint",
+          "quoteMint",
+          "mode",
+          "config",
+          "configSource",
+          "pool",
+          "firstBuy",
+          "metadata",
+          "configInstructionBase64",
+          "transactionCount",
+          "costs",
+          "transactions"
+        ],
+        "properties": {
+          "status": {
+            "const": "ready"
+          },
+          "deploymentId": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "baseMint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "quoteMint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "rewards"
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "configSource": {
+            "type": "string",
+            "enum": [
+              "shared",
+              "creator"
+            ]
+          },
+          "pool": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "firstBuy": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "symbol": {
+                "type": "string"
+              },
+              "uri": {
+                "type": "string"
+              }
+            }
+          },
+          "configInstructionBase64": {
+            "type": "string"
+          },
+          "configCreationSignature": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Signature"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a shared config: the transaction that created it (informational). Verify a shared config by comparing its account with a simulation of the expected config instruction."
+          },
+          "quoteTokenProgram": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "tokenBadge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "serverTime": {
+            "type": "integer"
+          },
+          "validUntil": {
+            "type": "integer",
+            "description": "Server time until which this prepared draft can be signed and submitted: 120 seconds after this prepare call (earlier only if the stored pair-token price would become too old). Preparing again is free and returns the same terms until the weekly price refresh."
+          },
+          "economics": {
+            "$ref": "#/components/schemas/LaunchEconomics"
+          },
+          "transactionCount": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "costs": {
+            "$ref": "#/components/schemas/LaunchCosts"
+          },
+          "transactions": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "config",
+                  "pool"
+                ],
+                "properties": {
+                  "config": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/UnsignedLaunchTransaction"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "pool": {
+                    "$ref": "#/components/schemas/UnsignedLaunchTransaction"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstBuyQuote": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "amountIn": {
+                    "$ref": "#/components/schemas/Atoms"
+                  },
+                  "tokensOut": {
+                    "$ref": "#/components/schemas/Atoms"
+                  },
+                  "minimumOut": {
+                    "$ref": "#/components/schemas/Atoms"
+                  },
+                  "supplyBps": {
+                    "type": "integer"
+                  },
+                  "slippageBps": {
+                    "type": "integer"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Signature": {
+        "type": "string",
+        "pattern": "^[1-9A-HJ-NP-Za-km-z]{64,88}$",
+        "description": "Base58 transaction signature."
+      },
+      "UnsignedLaunchTransaction": {
+        "type": "object",
+        "description": "Legacy wire without signatures. Sign the message with every key in `signers` (fee payer first) without changing a byte.",
+        "required": [
+          "transactionBase64",
+          "blockhash",
+          "lastValidBlockHeight",
+          "signers",
+          "computeUnitLimit",
+          "computeUnitPrice"
+        ],
+        "properties": {
+          "transactionBase64": {
+            "type": "string",
+            "contentEncoding": "base64"
+          },
+          "blockhash": {
+            "type": "string"
+          },
+          "lastValidBlockHeight": {
+            "$ref": "#/components/schemas/Height"
+          },
+          "signers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          "computeUnitLimit": {
+            "type": "integer"
+          },
+          "computeUnitPrice": {
+            "type": "string"
+          }
+        }
+      },
+      "Height": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]{0,19})$",
+        "description": "Block height as a decimal string."
+      },
+      "LaunchSubmission": {
+        "type": "object",
+        "required": [
+          "deploymentId",
+          "owner",
+          "baseMint",
+          "pool",
+          "config",
+          "configTransaction",
+          "poolTransaction"
+        ],
+        "properties": {
+          "deploymentId": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "baseMint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "pool": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "config": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "configTransaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LaunchTransactionRecord"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required exactly when configSource is \"creator\"."
+          },
+          "poolTransaction": {
+            "$ref": "#/components/schemas/LaunchTransactionRecord"
+          },
+          "relay": {
+            "type": "boolean",
+            "description": "Let the server broadcast the verified wires (config first, then the pool once the config is confirmed)."
+          }
+        }
+      },
+      "LaunchTransactionRecord": {
+        "type": "object",
+        "required": [
+          "signature",
+          "transactionBase64",
+          "blockhash",
+          "lastValidBlockHeight"
+        ],
+        "properties": {
+          "signature": {
+            "$ref": "#/components/schemas/Signature"
+          },
+          "transactionBase64": {
+            "type": "string",
+            "description": "The signed wire in canonical base64 (exactly as Buffer.toString(\"base64\") encodes it)."
+          },
+          "blockhash": {
+            "type": "string"
+          },
+          "lastValidBlockHeight": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Height"
+              }
+            ],
+            "description": "Informational. The server stores its own provider's newest last valid block height as the launch's expiry bound."
+          }
+        }
+      },
+      "LaunchSubmitResult": {
+        "type": "object",
+        "required": [
+          "saved",
+          "state",
+          "relayed"
+        ],
+        "properties": {
+          "saved": {
+            "const": true
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "signed",
+              "unknown",
+              "config_landed",
+              "confirmed",
+              "failed",
+              "expired"
+            ]
+          },
+          "relayed": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "config": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "confirmed",
+                          "pending",
+                          "failed"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "pool": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "sent",
+                          "waiting"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "LaunchStatus": {
+        "type": "object",
+        "required": [
+          "state",
+          "signature",
+          "configSignature",
+          "configLanded",
+          "retry"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "signed",
+              "unknown",
+              "config_landed",
+              "confirmed",
+              "failed",
+              "expired"
+            ]
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Signature"
+          },
+          "configSignature": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Signature"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "configLanded": {
+            "type": "boolean"
+          },
+          "retry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pool",
+                  "both"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when the attempt can no longer land: prepare again with the same mint, config key, upload and quote."
+          }
+        }
+      }
+    },
+    "responses": {
+      "RateLimited": {
+        "description": "Too many requests in this route class. Wait `Retry-After` seconds.",
+        "headers": {
+          "Retry-After": {
+            "$ref": "#/components/headers/Retry-After"
+          },
+          "RateLimit-Limit": {
+            "$ref": "#/components/headers/RateLimit-Limit"
+          },
+          "RateLimit-Remaining": {
+            "$ref": "#/components/headers/RateLimit-Remaining"
+          },
+          "RateLimit-Reset": {
+            "$ref": "#/components/headers/RateLimit-Reset"
+          },
+          "RateLimit-Policy": {
+            "$ref": "#/components/headers/RateLimit-Policy"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": "rate_limited",
+              "error": "Too many requests. Please wait a moment and try again."
+            }
+          }
+        }
+      }
+    }
+  }
+}

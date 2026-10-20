@@ -1,0 +1,20 @@
+{
+  "description": "Launch-only documentation. Only launch operations and their reachable schema components are published.",
+  "sources": {
+    "docs/api.md": "43689ddc6517210c0878cc555f27d0063ef5133a76b85d1e11f3b774ddfa4804",
+    "docs/openapi.json": "5f02844c872512429dad7277ec44733a5df75a4ef3e362bbcc25eba86838d580",
+    "../exports/runners-brand-kit/logos/runners-logo.svg": "00e8403a91570a31c5011a3ab5f7d8f125a065da5db814176b40ed0fb03aa068",
+    "../exports/runners-brand-kit/logos/runners-mascot.svg": "303bb37d00336d34b8ae1fadfa461e04cb06a39bbf826562039dc8ebb8dfd119"
+  },
+  "generated": {
+    "guides/basics.mdx": "e51ec39e1dce29819c377cb06d49b3cf40f6ac84ab91417d1bb7d4e6215566ff",
+    "guides/amounts.mdx": "9424fa5f6ffea6244940a1319b7f703c155c0869c98d37b8aa3187f9a05a7bfc",
+    "guides/launch.mdx": "c3f59f52990eb02104ab464a90c008ead9bcd287f141e7e1053a59632014a5cb",
+    "guides/errors.mdx": "99836f7d4f5a4c428b21e803e3435b64ef55222113846a72330fb70256138f1a",
+    "guides/rate-limits.mdx": "caf0de871c9eca9396baedbb1135b012bc38ecf236371742a9c86b556edb9af8",
+    "openapi.json": "937ffec4d78ace8ce5c7d869297ee3a1a15bf782ecf5e3d6e8329e8ac7c8e120",
+    "assets/favicon.svg": "303bb37d00336d34b8ae1fadfa461e04cb06a39bbf826562039dc8ebb8dfd119",
+    "assets/logo-dark.svg": "00e8403a91570a31c5011a3ab5f7d8f125a065da5db814176b40ed0fb03aa068",
+    "assets/logo-light.svg": "92b4240f1f10f383e6ee73b8229729707bb3fd7aca37c62751723d881de72886"
+  }
+}

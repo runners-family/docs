@@ -1,0 +1,14 @@
+---
+title: "Rate limits"
+description: "Respect request budgets, per-wallet quotas and retry instructions."
+---
+
+Limits apply per client address. Responses over a limit use HTTP `429`; honor `Retry-After` before retrying.
+
+| Operation | Default per client |
+| --- | --- |
+| Launch preparation, submission and estimates | 30 per minute, burst 15 |
+| Metadata uploads | 12 per 10 minutes, burst 6 |
+| Launch confirmation | 60 per minute, burst 30 |
+
+Limited responses carry `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` and `RateLimit-Policy`. There is no integrator API-key tier. Operators can change these defaults.

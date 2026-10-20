@@ -1,0 +1,51 @@
+---
+title: "Wallet authorization"
+description: "Keep keys locally and sign only the precise operation your agent intends."
+---
+
+## No API key or website session
+
+Reading launch costs and deployment information does not require an integrator account. Launch metadata uploads and launch preparation require an ed25519 signature from the creator's Solana wallet. Sending a launch transaction requires every signature listed by the prepared transaction.
+
+An API key is not a substitute for a wallet signature. Rate limits apply per client address to all clients, and launch/upload quotas also apply per wallet.
+
+## Two kinds of signatures
+
+| Signature | Purpose | Encoding |
+| --- | --- | --- |
+| Metadata message | Authorize publishing the exact image and normalized coin details | Base64 in `signatureBase64` |
+| Preparation message | Authorize preparing a specific coin launch | Base64 in `signatureBase64` |
+| Transaction signatures | Approve the actual on-chain instructions | Included in the serialized Solana transaction |
+
+The [launch guide](/guides/launch) specifies exact message bytes, JSON property order and timestamp handling. A signed preparation message does not execute a transaction.
+
+## Bind authorization to the deployment
+
+1. Request `GET /api/metadata`.
+2. Check that `appOrigin` is the RUNNERS origin you intended and that the deployment matches your selected network.
+3. Use the returned server time for `issuedAt`.
+4. Sign exactly the documented UTF-8 bytes, with `\n` between lines and no trailing newline.
+
+Changing whitespace, field order, image bytes or normalized metadata changes the message and invalidates its signature.
+
+## Local signing
+
+With `@solana/web3.js` and `tweetnacl`, an ed25519 message signature can be encoded like this:
+
+```js
+import nacl from 'tweetnacl';
+
+// wallet is a Keypair loaded from your local secret store.
+// messageBytes are the exact bytes from the launch guide.
+const signatureBase64 = Buffer.from(
+  nacl.sign.detached(messageBytes, wallet.secretKey)
+).toString('base64');
+```
+
+Never send `wallet.secretKey`, the mint/config secret keys or a seed phrase to RUNNERS or the docs playground. Keep the mint and config keys until confirmation, because retries must reuse them.
+
+## Programmatic HTTP clients
+
+Send requests from a server, agent or script without an `Origin` header. A browser on another site sends an origin, and state-changing API routes reject foreign origins. Public read endpoints support cross-origin browser access.
+
+The docs playground uses Mintlify's request proxy. Signed bodies still need valid, unexpired wallet authorization; the proxy does not sign for you.

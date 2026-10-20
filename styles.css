@@ -1,0 +1,9 @@
+/* RUNNERS: lime, ink, off-white and blue from the supplied brand assets.
+   Keep a dark label on the lime primary action in either color scheme. */
+a[href="https://runners.family/create"] {
+  background-color: #dcff3f !important;
+  color: #101214 !important;
+}
+a[href="https://runners.family/create"] * {
+  color: inherit !important;
+}

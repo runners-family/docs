@@ -1,55 +1,50 @@
-# Mintlify Starter Kit
+# RUNNERS developer documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+Mintlify documentation for the RUNNERS launch API. Hosting belongs to Mintlify; the API continues to run at `https://runners.family`. The docs do not deploy a backend, hold keys or execute transactions automatically.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## Deploy
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+The target repository is [runners-family/docs](https://github.com/runners-family/docs). Connect its default branch in Mintlify with `docs.json` at the repository root. See [DEPLOY.md](DEPLOY.md) for the free plan, domain and verification steps.
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+Mintlify Starter is listed at $0/month with a custom domain and API playground as of October 20, 2026. Check [current pricing](https://www.mintlify.com/pricing) when choosing the plan. Amplify is not used.
 
-## AI-assisted writing
+## Preview and validate
 
-Set up your AI coding tool to work with Mintlify:
+Node.js 22.15 or newer:
 
-```bash
-npx skills add https://mintlify.com/docs
+```sh
+npm ci --ignore-scripts
+npm run validate
+npm run dev
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+Open the localhost URL printed by Mintlify. `npm run validate` checks navigation, internal links, all OpenAPI references and Mintlify rendering rules. The CLI is pinned in package-lock.json.
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+## Content and maintenance
 
-## Development
+- `index.mdx`, `quickstart.mdx`, `guides/authentication.mdx`, `guides/recovery.mdx`: authored integration guides.
+- Other `guides/*.mdx` and `openapi.json`: synchronized from the RUNNERS application's current launch-only `docs/api.md` and `docs/openapi.json`.
+- `source-manifest.json`: hashes for the canonical inputs and generated output. No production secrets or runtime configuration are included.
+- `scripts/check.mjs`: catches broken navigation, contract references, placeholder hostnames and, when the application source is available, stale generated docs.
+- `.mintignore`: excludes maintenance files from the published docs.
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+To update generated content from a local RUNNERS application checkout:
 
+```sh
+RUNNERS_APP_DIR=/absolute/path/to/runners/ui npm run sync
+npm run validate
 ```
-npm i -g mint
+
+Review the diff, then commit and push to the docs repository's default branch. Mintlify automatically deploys connected-branch updates.
+
+The source contract uses `/` because the backend serves it. The docs copy changes only the server origin to `https://runners.family` and a private-source guide reference to a public reference. Only launch operations and their reachable schema components are exported; unrelated endpoints and schemas are excluded. Request/response shapes and operation identifiers for the retained operations are preserved.
+
+## Export a docs-only source ZIP
+
+```sh
+npm run package
 ```
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+This produces `dist/runners-mintlify-docs.zip`, with `docs.json` at its root, plus a SHA-256 file manifest. Packaging copies only an explicit list of documentation source files. It includes no application source, credentials, local state or Git history.
 
-```
-mint dev
-```
-
-View your local preview at `http://localhost:3000`.
-
-## Publishing changes
-
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
-
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+Mintlify generates `/llms.txt`, `/llms-full.txt` and Markdown page exports. Do not add a custom `llms.txt` unless intentionally replacing Mintlify's generated index.

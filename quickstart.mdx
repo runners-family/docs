@@ -1,47 +1,59 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "First API request"
+description: "Check the network and request an upload challenge before preparing a launch."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+## 1. Check the deployment
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+```bash
+curl --fail-with-body --silent --show-error \
+  https://runners.family/api/deployment
+```
 
-## Prerequisites
+Read `network`, `genesisHash`, `programs` and `transactionsEnabled`. The production origin serves mainnet. Match the genesis hash against your own Solana RPC before signing or sending any transaction.
 
-Before you begin, you must have:
+## 2. Get a metadata challenge
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+```bash
+curl --fail-with-body --silent --show-error \
+  https://runners.family/api/metadata
+```
 
-## Get started
+The response contains `deploymentId`, `appOrigin` and `issuedAt`. Bind the returned deployment and app origin into the exact messages described in [Launching coins](/guides/launch). Use the server's `issuedAt` for the authorization time.
 
-<Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+## JavaScript
 
-    ```bash
-    npm install your-package
-    ```
-  </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+Node.js 22 includes `fetch`; these reads need no packages.
 
-    ```bash
-    your-cli init
-    ```
-  </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+```js
+const API = 'https://runners.family';
 
-    ```bash
-    your-cli start
-    ```
-  </Step>
-</Steps>
+async function read(path) {
+  const response = await fetch(`${API}${path}`);
+  const text = await response.text();
+  let body;
+  try { body = JSON.parse(text); } catch {
+    throw new Error(`HTTP ${response.status}: non-JSON response`);
+  }
+  if (!response.ok) {
+    throw Object.assign(new Error(body.error ?? `HTTP ${response.status}`), {
+      code: body.code,
+      status: response.status,
+      retryAfter: response.headers.get('Retry-After'),
+    });
+  }
+  return body;
+}
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+const deployment = await read('/api/deployment');
+if (deployment.network !== 'mainnet') throw new Error('Unexpected network');
+console.log({ network: deployment.network, genesisHash: deployment.genesisHash });
+const challenge = await read('/api/metadata');
+console.log({ deploymentId: challenge.deploymentId, appOrigin: challenge.appOrigin, issuedAt: challenge.issuedAt });
+```
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+## Next: create a coin
+
+Follow the [complete launch guide](/guides/launch) for exact signed messages, image limits, transaction signers and request bodies. Read [recovery](/guides/recovery) before implementing automatic retries.
+
+The documentation origin and API origin are different: all API examples call `https://runners.family`, even when you are reading these pages on a Mintlify subdomain or `docs.runners.family`.
