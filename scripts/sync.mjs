@@ -74,14 +74,20 @@ function externalize(value) {
   return value;
 }
 generated['openapi.json'] = JSON.stringify(externalize(spec), null, 2) + '\n';
-const mascot = await read('../exports/runners-brand-kit/logos/runners-mascot.svg');
-const logo = await read('../exports/runners-brand-kit/logos/runners-logo.svg');
-generated['assets/favicon.svg'] = mascot;
-generated['assets/logo-dark.svg'] = logo;
-generated['assets/logo-light.svg'] = logo.replaceAll('#f2f1eb', '#171A20');
+// The current website header is authoritative. The September export contains
+// an obsolete wordmark; never source documentation branding from that pack.
+const mascot = await read('public/brand/mascot.svg');
+const header = await read('components/header.tsx');
+const wordmark = await readFile(resolve(root, 'assets/runners-wordmark.svg'), 'utf8');
+const inner = svg => svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+const width = Number(/viewBox="0 0 ([\d.]+) 24"/.exec(wordmark)[1]) + 32;
+const logo = color => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 24" role="img" aria-label="runners"><g fill="#9DDB00" color="#9DDB00" transform="scale(.1875)">${inner(mascot)}</g><g fill="${color}" color="${color}" transform="translate(32 0)">${inner(wordmark)}</g></svg>\n`;
+generated['assets/runners-favicon-v2.svg'] = mascot.replaceAll('currentColor', '#9DDB00');
+generated['assets/runners-header-dark-v2.svg'] = logo('#FAFAFA');
+generated['assets/runners-header-light-v2.svg'] = logo('#0A0A0A');
 generated['source-manifest.json'] = JSON.stringify({
   description: 'Launch-only documentation. Only launch operations and their reachable schema components are published.',
-  sources: { 'docs/api.md': digest(api), 'docs/openapi.json': digest(contract), '../exports/runners-brand-kit/logos/runners-logo.svg': digest(logo), '../exports/runners-brand-kit/logos/runners-mascot.svg': digest(mascot) },
+  sources: { 'docs/api.md': digest(api), 'docs/openapi.json': digest(contract), 'components/header.tsx': digest(header), 'public/brand/mascot.svg': digest(mascot), 'assets/runners-wordmark.svg': digest(wordmark) },
   generated: Object.fromEntries(Object.entries(generated).map(([path, value]) => [path, digest(value)])),
 }, null, 2) + '\n';
 if (process.argv.includes('--check')) {

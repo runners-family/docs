@@ -3,8 +3,9 @@
   "sources": {
     "docs/api.md": "43689ddc6517210c0878cc555f27d0063ef5133a76b85d1e11f3b774ddfa4804",
     "docs/openapi.json": "5f02844c872512429dad7277ec44733a5df75a4ef3e362bbcc25eba86838d580",
-    "../exports/runners-brand-kit/logos/runners-logo.svg": "00e8403a91570a31c5011a3ab5f7d8f125a065da5db814176b40ed0fb03aa068",
-    "../exports/runners-brand-kit/logos/runners-mascot.svg": "303bb37d00336d34b8ae1fadfa461e04cb06a39bbf826562039dc8ebb8dfd119"
+    "components/header.tsx": "f10094085d8d95abc68738470638737a9b77af9f7b805976783c07549d81d7e1",
+    "public/brand/mascot.svg": "90361499ff2752698d4b88acc2c46c9d36d287f652c7433c7fe327abd331f40a",
+    "assets/runners-wordmark.svg": "4de5f2312990360bc00b2705223c76e85924df71d68cadf9d2a34d965aba40d3"
   },
   "generated": {
     "guides/basics.mdx": "e51ec39e1dce29819c377cb06d49b3cf40f6ac84ab91417d1bb7d4e6215566ff",
@@ -13,8 +14,8 @@
     "guides/errors.mdx": "99836f7d4f5a4c428b21e803e3435b64ef55222113846a72330fb70256138f1a",
     "guides/rate-limits.mdx": "caf0de871c9eca9396baedbb1135b012bc38ecf236371742a9c86b556edb9af8",
     "openapi.json": "937ffec4d78ace8ce5c7d869297ee3a1a15bf782ecf5e3d6e8329e8ac7c8e120",
-    "assets/favicon.svg": "303bb37d00336d34b8ae1fadfa461e04cb06a39bbf826562039dc8ebb8dfd119",
-    "assets/logo-dark.svg": "00e8403a91570a31c5011a3ab5f7d8f125a065da5db814176b40ed0fb03aa068",
-    "assets/logo-light.svg": "92b4240f1f10f383e6ee73b8229729707bb3fd7aca37c62751723d881de72886"
+    "assets/runners-favicon-v2.svg": "0a799344cc1711a53ea4fc1e7a4021e74c19898904364e3fa202a5c087ada580",
+    "assets/runners-header-dark-v2.svg": "fe9ef91500054430849f64ff9ad707f28f9e8b39f7cc9d418dd54794fa4c1c58",
+    "assets/runners-header-light-v2.svg": "4df7380c43e538c5d5c3c28ad129d8203894e8b2df0ebdfbcd89aff0bc32ae50"
   }
 }

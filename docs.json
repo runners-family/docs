@@ -3,12 +3,12 @@
   "theme": "mint",
   "name": "RUNNERS Launch API",
   "description": "Launch Solana coins from your own agent, bot or application.",
-  "colors": { "primary": "#DCFF3F", "light": "#DCFF3F", "dark": "#0C41F0" },
-  "background": { "color": { "light": "#F2F1EB", "dark": "#101214" } },
+  "colors": { "primary": "#9DDB00", "light": "#9DDB00", "dark": "#0C41F0" },
+  "background": { "color": { "light": "#FFFFFF", "dark": "#101214" } },
   "appearance": { "default": "dark" },
-  "fonts": { "family": "Inter" },
-  "favicon": "/assets/favicon.svg",
-  "logo": { "light": "/assets/logo-light.svg", "dark": "/assets/logo-dark.svg", "href": "/" },
+  "fonts": { "family": "Geist" },
+  "favicon": "/assets/runners-favicon-v2.svg",
+  "logo": { "light": "/assets/runners-header-light-v2.svg", "dark": "/assets/runners-header-dark-v2.svg", "href": "/" },
   "navbar": {
     "links": [{ "label": "Open RUNNERS", "href": "https://runners.family" }],
     "primary": { "type": "button", "label": "Launch a coin", "href": "https://runners.family/create" }

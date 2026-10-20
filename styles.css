@@ -1,9 +1,19 @@
-/* RUNNERS: lime, ink, off-white and blue from the supplied brand assets.
-   Keep a dark label on the lime primary action in either color scheme. */
+/* Match the active RUNNERS header and primary action. Mintlify draws the
+   button background in a child span, so style that layer explicitly. */
 a[href="https://runners.family/create"] {
-  background-color: #dcff3f !important;
+  border-radius: 0.75rem;
+  background: transparent !important;
   color: #101214 !important;
+}
+a[href="https://runners.family/create"] > span.absolute {
+  background: #9ddb00 !important;
 }
 a[href="https://runners.family/create"] * {
   color: inherit !important;
+}
+a[href="https://runners.family/create"] svg {
+  display: none;
+}
+a[href="https://runners.family/create"] {
+  padding-inline: 0.875rem;
 }

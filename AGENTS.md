@@ -2,6 +2,11 @@
 
 This repository hosts public API documentation on Mintlify Starter. It does not host the RUNNERS backend. The production API origin is `https://runners.family`; do not replace it with the docs domain or invent an `api.runners.family` deployment.
 
+## Branding
+
+- Match the active website header, Geist typography, green accent and mascot. Never copy the obsolete September outlined wordmark or Mintlify starter icons.
+- Use the versioned `assets/runners-header-*-v2.svg` and `assets/runners-favicon-v2.svg` files configured in `docs.json`. The header wordmark paths reproduce Geist 600 at the website’s spacing; the mascot comes from the active application.
+
 ## Content and verification
 
 - Keep exact endpoint paths, message bytes, JSON field order, base-unit amounts and recovery rules aligned with the existing backend contract.
