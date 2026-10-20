@@ -1,7 +1,7 @@
 {
   "description": "Launch-only documentation. Only launch operations and their reachable schema components are published.",
   "sources": {
-    "docs/api.md": "9b633d6bf293d0a0fbda9d68ee4a8c360293b504e81f0c305bdbd68d4faeabe4",
+    "docs/api.md": "1827db8fb1505e095af569ab3fd9a48110b3b9007e7d27c80fd077925a944804",
     "docs/openapi.json": "2a5e28b9497b7d1da6483216e5e847d5bebef32831cdb91d9952dd3c98310f2e",
     "components/header.tsx": "f10094085d8d95abc68738470638737a9b77af9f7b805976783c07549d81d7e1",
     "public/brand/mascot.svg": "90361499ff2752698d4b88acc2c46c9d36d287f652c7433c7fe327abd331f40a",
@@ -9,7 +9,7 @@
   },
   "generated": {
     "index.mdx": "b02a66189d5f00492d5137b14aec91da14f2f38fcae125384e5443dda482773a",
-    "guides/launch.mdx": "73c90378939317b2e4b88fa5f2a440b79e423fbf8f705b2f6b1f3af46a32ee46",
+    "guides/launch.mdx": "ed60c124ba6ad054c6487a50dbb91f6ad30f982d2e18b60179b57915d1411582",
     "guides/errors.mdx": "c766f2e2600e2388b627c6e83dd34e32286d4bb9054aa89a859430ef1e548825",
     "openapi.json": "922f68e82234e0a22b512e2b93f0a577b5b7835301c607c0193cd23d168eaa02",
     "assets/runners-favicon-v2.svg": "0a799344cc1711a53ea4fc1e7a4021e74c19898904364e3fa202a5c087ada580",
