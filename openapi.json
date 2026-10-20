@@ -118,7 +118,7 @@
             }
           },
           "429": {
-            "description": "`upload_limit` (per-wallet daily limit) or rate limit.",
+            "description": "Identical-content retry limit, configured storage budget or request-rate limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -323,7 +323,7 @@
             }
           },
           "429": {
-            "description": "`launch_limit` (per-wallet daily limit) or rate limit.",
+            "description": "Request-rate limit.",
             "content": {
               "application/json": {
                 "schema": {
@@ -592,7 +592,6 @@
               "draft_not_ready",
               "already_submitted",
               "not_retryable",
-              "launch_limit",
               "upload_limit",
               "price_unavailable",
               "quote_unpriced",

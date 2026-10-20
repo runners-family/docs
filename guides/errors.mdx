@@ -24,7 +24,7 @@ Errors return `{"code":"...","error":"..."}`. Branch on `code`, not the human-re
 | `draft_changed` | 409 | Draft fields or config ownership conflict. Use a new mint/config. |
 | `already_submitted` | 409 | Confirm the existing launch. |
 | `not_retryable` | 409 | Recovery is unavailable. Use a new mint/config. |
-| `launch_limit`, `upload_limit`, `rate_limited` | 429 | Wait for the quota or request budget to reset. |
+| `upload_limit`, `rate_limited` | 429 | Wait for the upload retry budget or request-rate window to reset. |
 | `quote_unpriced`, `quote_illiquid` | 422 | Quote cannot be priced or has less than $25,000 price liquidity. Choose a supported quote. |
 | `price_pending`, `price_unavailable` | 503 | Retry after the quote price becomes available. |
 | `unsupported_quote`, `transfer_fee_quote_unsupported` | 422 | Choose a supported quote token. |
@@ -50,4 +50,4 @@ Default request limits apply per client address:
 | Metadata upload | 12/10 minutes | 6 |
 | Confirm | 60/minute | 30 |
 
-Per-wallet rolling daily defaults: **25 launch drafts** and **30 metadata uploads**. Request-rate responses expose `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `RateLimit-Policy` and `Retry-After`. Operators can override defaults; follow response headers.
+There is no daily launch limit or per-wallet daily metadata-upload limit. Request-rate protection and identical-content upload retry limits still apply. Request-rate responses expose `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `RateLimit-Policy` and `Retry-After`; follow response headers.
