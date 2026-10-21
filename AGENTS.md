@@ -19,7 +19,7 @@ This repository hosts public API documentation on Mintlify Starter. It does not 
 
 - Use “coin” for a launched asset, “quote token” for its pair, “creator” for the launching wallet and “atoms” for integer base units.
 - Use active voice, concise sentences and sentence case headings.
-- Keep the site to three guides (Launch API, Launch a coin, Errors and limits) plus the API reference. State signing, amounts, retries and limits once in the relevant section. Avoid marketing slogans, repeated overviews, decorative cards and separate pages for a few paragraphs.
+- Keep the launch API content to three guides (Launch API, Launch a coin, Errors and limits) plus the API reference. The owner-requested Media kit lives separately under Resources and provides current website brand downloads. State signing, amounts, retries and limits once in the relevant section. Avoid marketing slogans, repeated overviews, decorative cards and separate pages for a few paragraphs.
 - Use code formatting for paths, amounts, identifiers and commands.
 - Explain that launch preparation returns unsigned transactions; it does not execute a launch.
 - Treat `unknown` transaction status as unresolved. Never recommend replacing a transaction until its outcome is known.

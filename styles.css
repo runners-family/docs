@@ -17,3 +17,51 @@ a[href="https://runners.family/create"] svg {
 a[href="https://runners.family/create"] {
   padding-inline: 0.875rem;
 }
+
+.media-kit-download {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: #9ddb00;
+  color: #101214 !important;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+.media-kit-download:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+.media-kit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.media-kit-mascots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.media-kit-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 156px;
+  padding: 28px;
+  border: 1px solid #80808033;
+  border-radius: 12px;
+}
+.media-kit-light { background: #fff; }
+.media-kit-dark { background: #101214; }
+.media-kit-preview img { width: 100%; max-width: 230px; margin: 0; border-radius: 0; }
+.media-kit-mascots img { width: 80px; height: 80px; }
+.media-kit-grid p { margin: 10px 0 0; font-size: 14px; }
+.media-kit-grid p a { display: inline-flex; align-items: center; min-height: 44px; }
+.media-kit-colors { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.media-kit-colors > div { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.media-kit-colors span { display: block; height: 64px; border-radius: 10px; border: 1px solid #80808055; }
+.media-kit-colors code { width: fit-content; font-size: 12px; }
+@media (max-width: 640px) {
+  .media-kit-grid { grid-template-columns: 1fr; }
+  .media-kit-mascots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .media-kit-mascots .media-kit-preview { min-height: 104px; padding: 16px; }
+  .media-kit-mascots img { width: 56px; height: 56px; }
+  .media-kit-colors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

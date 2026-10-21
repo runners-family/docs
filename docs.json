@@ -18,7 +18,8 @@
       {
         "tab": "Guides",
         "groups": [
-          { "group": "Launch API", "pages": ["index", "guides/launch", "guides/errors"] }
+          { "group": "Launch API", "pages": ["index", "guides/launch", "guides/errors"] },
+          { "group": "Resources", "pages": ["media-kit"] }
         ]
       },
       { "tab": "API reference", "openapi": "/openapi.json" }
