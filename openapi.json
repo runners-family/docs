@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "info": {
     "title": "RUNNERS Launch API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "summary": "Launch a Solana coin from an agent or bot.",
-    "description": "Upload wallet-authorized metadata, estimate launch costs, prepare unsigned launch transactions, sign locally, submit and confirm. All amounts use integer base-unit strings. No website session or integrator API key is required. See the Launch a coin guide for exact authorization messages."
+    "description": "Upload coin metadata, estimate launch costs, prepare unsigned launch transactions, sign locally, submit and confirm. All amounts use integer base-unit strings. No website session or integrator API key is required. See the Launch a coin guide for the optional authorization messages and the launchpad signer."
   },
   "servers": [
     {
@@ -15,7 +15,7 @@
   "tags": [
     {
       "name": "Launch",
-      "description": "Launch a coin from any HTTP client with an ed25519 keypair: upload the image and details, prepare (one transaction when a shared config exists for the quote token's price band, otherwise two), sign with the listed signers, submit (optionally relayed) and confirm. Every write is authorized by a signature from the creator's wallet key. See the Launch a coin guide for the exact messages to sign."
+      "description": "Launch a coin from any HTTP client with an ed25519 keypair: upload the image and details, prepare (one transaction when a shared config exists for the quote token's price band, otherwise two), sign with the listed signers, submit (optionally relayed) and confirm. The launch transactions the creator's wallet signs authorize the coin; wallet message signatures for the upload and the preparation are optional. See the Launch a coin guide."
     }
   ],
   "paths": {
@@ -49,14 +49,50 @@
         ],
         "operationId": "uploadMetadata",
         "summary": "Upload a coin's image and details",
-        "description": "Multipart (`image`, `authorization` as a JSON string) or JSON `{ authorization, image: { type, base64 } }`. `authorization` = `{ owner, deploymentId, issuedAt, signatureBase64, metadata }`; the signed message is described in docs/api.md. Re-uploading the same content returns the same record.",
+        "description": "JSON `{ authorizationBase64, image: { type, base64 } }`, where `authorizationBase64` is the base64 of the authorization JSON `{ owner, deploymentId, issuedAt, metadata }` plus `signatureBase64` if the upload is signed (optional; the message is described in the Launch a coin guide). Send it base64-encoded: the CDN refuses bodies that look like HTML with an HTML 403. A plain `authorization` object and multipart (`image`, `authorization` as a JSON string) are still accepted. Re-uploading the same content returns the same record.",
         "x-runners-rate-class": "upload",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "type": "object",
+                "required": [
+                  "image"
+                ],
+                "properties": {
+                  "authorizationBase64": {
+                    "type": "string",
+                    "contentEncoding": "base64",
+                    "description": "Base64 of the authorization JSON (preferred over `authorization`)."
+                  },
+                  "authorization": {
+                    "type": "object",
+                    "description": "The authorization as a JSON object; the CDN may refuse it if the coin details look like HTML."
+                  },
+                  "image": {
+                    "type": "object",
+                    "required": [
+                      "type",
+                      "base64"
+                    ],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "image/png",
+                          "image/jpeg",
+                          "image/gif",
+                          "image/webp"
+                        ]
+                      },
+                      "base64": {
+                        "type": "string",
+                        "contentEncoding": "base64"
+                      }
+                    }
+                  }
+                }
               }
             },
             "multipart/form-data": {
@@ -334,6 +370,82 @@
           },
           "503": {
             "description": "`unavailable`, or `price_unavailable`: the pair token's USD price cannot be used right now (the provider is unavailable, or a move of more than 3x awaits its confirming observation 24 hours later). Retry later. A pair token without a usable stored price is priced here.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/launch/tag": {
+      "post": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "tagLaunchTransaction",
+        "summary": "Get the launchpad signature for a self-built pool transaction",
+        "description": "Only for pool transactions built without `buildTransactions` (server-built ones arrive tagged). RUNNERS signs only a pool transaction that matches the prepared draft byte for byte, before the creator signs.",
+        "x-runners-rate-class": "launch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchTagRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The launchpad's signature.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchTag"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`origin_forbidden`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`draft_not_found` (no prepared, unsubmitted draft) or `not_found` (tagging unavailable).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`transaction_invalid` or `transaction_mismatch` (the wire differs from the prepared draft or lacks the launchpad signer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "description": "`metadata_required` or `unavailable`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -847,7 +959,7 @@
       },
       "LaunchPrepareRequest": {
         "type": "object",
-        "description": "The signed request fields in exactly this key order, plus `signatureBase64` (ed25519 over the message described in docs/api.md) and unsigned `options`.",
+        "description": "The request fields in exactly this key order, plus `signatureBase64` (optional: ed25519 over the message described in the Launch a coin guide; a signature that is sent must be valid) and unsigned `options`.",
         "required": [
           "deploymentId",
           "owner",
@@ -858,8 +970,7 @@
           "metadataId",
           "metadataNamespace",
           "firstBuy",
-          "issuedAt",
-          "signatureBase64"
+          "issuedAt"
         ],
         "properties": {
           "deploymentId": {
@@ -903,7 +1014,8 @@
             "type": "integer"
           },
           "signatureBase64": {
-            "type": "string"
+            "type": "string",
+            "description": "Optional wallet signature over the preparation message."
           },
           "options": {
             "type": "object",
@@ -1116,7 +1228,7 @@
       },
       "UnsignedLaunchTransaction": {
         "type": "object",
-        "description": "Legacy wire without signatures. Sign the message with every key in `signers` (fee payer first) without changing a byte.",
+        "description": "Legacy wire. Sign the message with every key in `signers` (fee payer first) without changing a byte. The pool transaction already carries the RUNNERS launchpad signer's signature (RUNXxXY4j5LnT4DAZm4w3Vg6sB8bpFxSxUg1rwqLkHx, a read-only signer no instruction uses, by which trading terminals attribute the coin): add signatures to these bytes, never rebuild the transaction.",
         "required": [
           "transactionBase64",
           "blockhash",
@@ -1154,6 +1266,48 @@
         "type": "string",
         "pattern": "^(0|[1-9][0-9]{0,19})$",
         "description": "Block height as a decimal string."
+      },
+      "LaunchTagRequest": {
+        "type": "object",
+        "required": [
+          "deploymentId",
+          "baseMint",
+          "owner",
+          "transactionBase64"
+        ],
+        "description": "A self-built pool transaction for a prepared draft, with the launchpad signer added as a read-only signer after the creator and mint. The mint may have signed; the creator signs after the tag.",
+        "properties": {
+          "deploymentId": {
+            "type": "string"
+          },
+          "baseMint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "transactionBase64": {
+            "type": "string",
+            "contentEncoding": "base64"
+          }
+        }
+      },
+      "LaunchTag": {
+        "type": "object",
+        "required": [
+          "signer",
+          "signatureBase64"
+        ],
+        "properties": {
+          "signer": {
+            "$ref": "#/components/schemas/Address",
+            "description": "The RUNNERS launchpad signer."
+          },
+          "signatureBase64": {
+            "type": "string",
+            "description": "The launchpad's ed25519 signature for the submitted message; add it to the transaction."
+          }
+        }
       },
       "LaunchSubmission": {
         "type": "object",

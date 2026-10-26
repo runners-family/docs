@@ -38,6 +38,7 @@ Errors return `{"code":"...","error":"..."}`. Branch on `code`, not the human-re
 | `transaction_invalid`, `transaction_mismatch` | 422 | Wire is malformed or differs from prepare. |
 | `image_invalid` | 422 | Check image bytes, type and dimensions. |
 | `request_too_large` | 413 | Reduce the request size. |
+| none (HTML body) | 403 | The CDN refused a body that looks like HTML. Send uploads with `authorizationBase64`. |
 | `unavailable` | 503 | Retry later. |
 
 ### Limits
@@ -46,7 +47,7 @@ Default request limits apply per client address:
 
 | Operation | Limit | Burst |
 | --- | --- | --- |
-| Prepare, submit, estimate | 30/minute | 15 |
+| Prepare, tag, submit, estimate | 30/minute | 15 |
 | Metadata upload | 12/10 minutes | 6 |
 | Confirm | 60/minute | 30 |
 

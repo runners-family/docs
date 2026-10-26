@@ -30,12 +30,12 @@ for (const [section, slug, title, description] of guides) {
   generated[`${slug}.mdx`] = frontmatter(title, description) + adapt(body) + '\n';
 }
 const spec = JSON.parse(contract);
-const launchPaths = ['/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/submit', '/api/launch/confirm'];
+const launchPaths = ['/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/tag', '/api/launch/submit', '/api/launch/confirm'];
 spec.paths = Object.fromEntries(launchPaths.map(path => {
   if (!spec.paths[path]) throw new Error(`Missing launch endpoint: ${path}`);
   return [path, spec.paths[path]];
 }));
-spec.info = { title: 'RUNNERS Launch API', version: spec.info.version, summary: 'Launch a Solana coin from an agent or bot.', description: 'Upload wallet-authorized metadata, estimate launch costs, prepare unsigned launch transactions, sign locally, submit and confirm. All amounts use integer base-unit strings. No website session or integrator API key is required. See the Launch a coin guide for exact authorization messages.' };
+spec.info = { title: 'RUNNERS Launch API', version: spec.info.version, summary: 'Launch a Solana coin from an agent or bot.', description: 'Upload coin metadata, estimate launch costs, prepare unsigned launch transactions, sign locally, submit and confirm. All amounts use integer base-unit strings. No website session or integrator API key is required. See the Launch a coin guide for the optional authorization messages and the launchpad signer.' };
 spec.tags = spec.tags.filter(tag => tag.name === 'Launch');
 // Only include components reachable from launch operations; filtering paths alone would
 // still publish unrelated trading/market/fee schemas in the downloadable contract.

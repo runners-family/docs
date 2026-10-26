@@ -7,7 +7,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = path => readFile(resolve(root, path), 'utf8');
 const config = JSON.parse(await read('docs.json'));
 const spec = JSON.parse(await read('openapi.json'));
-assert.deepEqual(Object.keys(spec.paths).sort(), ['/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/submit', '/api/launch/confirm'].sort(), 'Publish only launch and required metadata endpoints');
+assert.deepEqual(Object.keys(spec.paths).sort(), ['/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/tag', '/api/launch/submit', '/api/launch/confirm'].sort(), 'Publish only launch and required metadata endpoints');
 assert.ok(!/PublicDeployment|rpcUrl|subscriptionsUrl|TradeTransaction|CreatorClaim|MarketCoin|\/api\/(?:deployment|v1\/(trade|creator|transactions))/.test(JSON.stringify(spec)), 'Do not expose website configuration or unrelated operations');
 assert.equal(spec.servers[0].url, 'https://runners.family', 'The playground must call the API origin');
 assert.equal(config.api.playground.proxy, true, 'Writes require the server proxy rather than a foreign browser Origin');
