@@ -388,7 +388,7 @@
         ],
         "operationId": "tagLaunchTransaction",
         "summary": "Get the launchpad signature for a self-built pool transaction",
-        "description": "For pool transactions built without `buildTransactions`, or server-built without `launchpadTag`. RUNNERS signs only a pool transaction that matches the prepared draft byte for byte, before the creator signs.",
+        "description": "Only for pool transactions built without `buildTransactions` (server-built ones arrive tagged). RUNNERS signs only a pool transaction that matches the prepared draft byte for byte, before the creator signs.",
         "x-runners-rate-class": "launch",
         "requestBody": {
           "required": true,
@@ -1030,11 +1030,6 @@
               },
               "buildTransactions": {
                 "type": "boolean"
-              },
-              "launchpadTag": {
-                "type": "boolean",
-                "default": false,
-                "description": "Return the pool transaction with the RUNNERS launchpad signature already in place (sign the returned bytes; never rebuild the transaction)."
               }
             }
           }
@@ -1233,7 +1228,7 @@
       },
       "UnsignedLaunchTransaction": {
         "type": "object",
-        "description": "Legacy wire. Sign the message with every key in `signers` (fee payer first) without changing a byte. With `options.launchpadTag: true`, the pool transaction already carries the RUNNERS launchpad signer's signature (RUNXxXY4j5LnT4DAZm4w3Vg6sB8bpFxSxUg1rwqLkHx, a read-only signer no instruction uses, by which trading terminals attribute the coin): add signatures to these bytes, never rebuild the transaction.",
+        "description": "Legacy wire. Sign the message with every key in `signers` (fee payer first) without changing a byte. The pool transaction already carries the RUNNERS launchpad signer's signature (RUNXxXY4j5LnT4DAZm4w3Vg6sB8bpFxSxUg1rwqLkHx, a read-only signer no instruction uses, by which trading terminals attribute the coin): add signatures to these bytes (web3.js `partialSign`, not `sign`), never rebuild the transaction.",
         "required": [
           "transactionBase64",
           "blockhash",

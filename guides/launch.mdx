@@ -87,7 +87,7 @@ Origin: <appOrigin>
 Authorize preparing this coin's launch. Your wallet will approve the launch transactions separately.
 ```
 
-Send `POST /api/launch/prepare` with those request fields, plus `signatureBase64` if you signed. Optional unsigned `options` fields are `priority` (`normal`, `fast` or `turbo`; default `fast`), `slippageBps` (0–5000; default 0), `buildTransactions` (default `true`) and `launchpadTag` (default `false`). A zero-slippage first buy executes inside pool creation. Setting `buildTransactions: false` returns no transactions to sign.
+Send `POST /api/launch/prepare` with those request fields, plus `signatureBase64` if you signed. Optional unsigned `options` fields are `priority` (`normal`, `fast` or `turbo`; default `fast`), `slippageBps` (0–5000; default 0) and `buildTransactions` (default `true`). A zero-slippage first buy executes inside pool creation. Setting `buildTransactions: false` returns no transactions to sign.
 
 The response includes unsigned `transactions`, their `signers`, `costs`, `economics`, `config`, `pool` and `validUntil`:
 
@@ -109,7 +109,7 @@ tx.partialSign(...requiredKeypairs);
 const signedWire = tx.serialize().toString('base64');
 ```
 
-Trading terminals attribute a coin to RUNNERS by the launchpad signer `RUNXxXY4j5LnT4DAZm4w3Vg6sB8bpFxSxUg1rwqLkHx`, a read-only signer on the pool transaction that no instruction uses. With `options.launchpadTag: true`, `transactions.pool` arrives with its signature already in place. It is not in `signers`: add your signatures to the returned bytes as shown, because a client that rebuilds the transaction from its message cannot sign it. Without the option, the pool transaction is untagged.
+`transactions.pool` arrives with one signature already in place: RUNNERS' launchpad signer `RUNXxXY4j5LnT4DAZm4w3Vg6sB8bpFxSxUg1rwqLkHx`, a read-only signer that no instruction uses. Trading terminals attribute the coin to RUNNERS by it. It is not in `signers`: add your signatures to the returned bytes with `partialSign` as shown. web3.js `sign()` resets existing signatures, and rebuilding the transaction from its message drops this one, so the transaction can no longer be completed.
 
 If you build the pool transaction yourself (`buildTransactions: false`), add the launchpad signer as a read-only signer after the creator and mint, used by no instruction. Sign with the mint, then, before the creator signs, send `POST /api/launch/tag` with `{"deploymentId","baseMint","owner","transactionBase64"}`. The response `{"signer","signatureBase64"}` is the launchpad's signature for that exact message; add it, then sign with the creator. RUNNERS signs only a pool transaction that matches your prepared draft. An untagged pool transaction is still accepted.
 
