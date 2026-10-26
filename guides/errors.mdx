@@ -38,6 +38,8 @@ Errors return `{"code":"...","error":"..."}`. Branch on `code`, not the human-re
 | `transaction_invalid`, `transaction_mismatch` | 422 | Wire is malformed or differs from prepare. |
 | `image_invalid` | 422 | Check image bytes, type and dimensions. |
 | `request_too_large` | 413 | Reduce the request size. |
+| `config_required` | 409 | The pair token has no launch configuration for its current price band yet. Retry later or launch step by step. |
+| `unsent_limit` | 429 | The wallet has 500 one-call launches it has not sent. Send them, or wait a few minutes for them to expire. |
 | none (HTML body) | 403 | The CDN refused a body that looks like HTML. Send uploads with `authorizationBase64`. |
 | `unavailable` | 503 | Retry later. |
 
@@ -47,8 +49,8 @@ Default request limits apply per client address:
 
 | Operation | Limit | Burst |
 | --- | --- | --- |
-| Prepare, tag, submit, estimate | 30/minute | 15 |
-| Metadata upload | 12/10 minutes | 6 |
-| Confirm | 60/minute | 30 |
+| Prepare, tag, submit, estimate | 1,200/minute | 200 |
+| Metadata upload, one-call create | 600/minute | 100 |
+| Confirm | 600/minute | 100 |
 
-There is no daily launch limit or per-wallet daily metadata-upload limit. Request-rate protection and identical-content upload retry limits still apply. Request-rate responses expose `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `RateLimit-Policy` and `Retry-After`; follow response headers.
+There is no daily launch limit or per-wallet daily metadata-upload limit. A wallet can hold up to 500 one-call launches it has not sent yet (`unsent_limit`); sent launches do not count. Request-rate protection and identical-content upload retry limits still apply. Request-rate responses expose `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `RateLimit-Policy` and `Retry-After`; follow response headers.

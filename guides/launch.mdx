@@ -3,6 +3,58 @@ title: "Launch a coin"
 description: "Upload metadata, sign, submit and confirm."
 ---
 
+### One call
+
+`POST /api/launch/create` publishes the coin's image and details and returns its launch transaction, already signed by RUNNERS: by the launchpad signer and by the new mint, whose key RUNNERS generates and does not keep. Sign it as the creator and send it to any Solana RPC. RUNNERS finds the launch on chain by its pool address; there is nothing to submit.
+
+```json
+{
+  "owner": "<creator wallet public key>",
+  "name": "Example Coin",
+  "symbol": "COIN",
+  "description": "",
+  "website": "", "x": "", "telegram": "",
+  "image": "<base64 image bytes>",
+  "imageType": "image/png",
+  "quoteMint": "So11111111111111111111111111111111111111112",
+  "mode": "standard",
+  "firstBuy": "0"
+}
+```
+
+Only `owner`, `name`, `symbol`, `image` and `imageType` are required. `quoteMint` defaults to SOL, and `mode` to `standard` for SOL and `rewards` otherwise. `firstBuy` is in quote-token atoms; optional `priority` and `slippageBps` work as in prepare. Name, symbol, description, links and image follow the rules in Upload metadata. A description that looks like HTML can be refused by the CDN.
+
+The response holds the transaction and the coin's addresses:
+
+```json
+{
+  "transaction": "<base64 wire, signed by everyone except the creator>",
+  "mint": "<coin mint>",
+  "pool": "<pool address>",
+  "config": "<config address>",
+  "quoteMint": "So11111111111111111111111111111111111111112",
+  "mode": "standard",
+  "blockhash": "<blockhash>",
+  "lastValidBlockHeight": "<height>",
+  "metadataUri": "<metadata URI>",
+  "costs": {"configRent":"0","poolRent":"...","totalRent":"...","firstBuyRent":"0","wrappedSolRent":"0"},
+  "firstBuyQuote": null
+}
+```
+
+Sign and send it before the blockhash expires, about a minute. Add the creator's signature to the returned bytes; RUNNERS' signatures stay in place:
+
+```js
+// @solana/web3.js
+const tx = VersionedTransaction.deserialize(Buffer.from(transaction, 'base64'));
+tx.sign([creator]);
+await connection.sendRawTransaction(tx.serialize());
+```
+
+With Python `solders`, sign the message and keep the other signatures: `VersionedTransaction.populate(tx.message, [creator.sign_message(to_bytes_versioned(tx.message)), *tx.signatures[1:]])`. `VersionedTransaction(tx.message, [creator])` fails because it expects a keypair for every signer.
+
+Optionally poll `POST /api/launch/confirm` with the mint and your transaction's signature. A pair token without a launch configuration for its current price band returns `config_required`: retry later, or launch step by step below.
+
 ### Before you start
 
 Use a funded Solana wallet. Generate and retain separate mint and config keypairs locally; retries reuse them. Send JSON and omit the HTTP `Origin` header.

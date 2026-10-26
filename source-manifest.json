@@ -1,17 +1,17 @@
 {
   "description": "Launch-only documentation. Only launch operations and their reachable schema components are published.",
   "sources": {
-    "docs/api.md": "c11e42f51297647b124a9f4ca309188ad2ff125d72d52d3000bd53678b5c2417",
-    "docs/openapi.json": "f3e445722fc736a88034fe9b470228124af40ee9cf93b146f9efac882db9f25e",
+    "docs/api.md": "340b35e85d15a21a8e51956dad6e976e8896135e1f26c26829cf94385a9bb499",
+    "docs/openapi.json": "545a3f76dfa1cd1ea297d46240555aabb423a39aad781090445c2fa221d7d531",
     "components/header.tsx": "f10094085d8d95abc68738470638737a9b77af9f7b805976783c07549d81d7e1",
     "public/brand/mascot.svg": "90361499ff2752698d4b88acc2c46c9d36d287f652c7433c7fe327abd331f40a",
     "assets/runners-wordmark.svg": "4de5f2312990360bc00b2705223c76e85924df71d68cadf9d2a34d965aba40d3"
   },
   "generated": {
-    "index.mdx": "b02a66189d5f00492d5137b14aec91da14f2f38fcae125384e5443dda482773a",
-    "guides/launch.mdx": "3bbfed158ff16abbdddd2fad182bb5c890af4203c6d1676810dff20fe81f30d7",
-    "guides/errors.mdx": "ac83150610630976076e7addfe577757837afcdf867c1d905df4d613a4db192c",
-    "openapi.json": "ea8340c3e9f0d49fdc6a57a1ab0fc96a55d130391157be001426fe5cda3046de",
+    "index.mdx": "8ea6689efde7215a354676c3fc9ca8c8afd70bc0a039714246506fa45db51464",
+    "guides/launch.mdx": "a63b974f612527267751b1018f513ae5d5a44989ee6a4e0fde23e299f5386c64",
+    "guides/errors.mdx": "ed0196e62582c006d7c5283cbaad32ae18b90180b0b751f09a22924ae1c39441",
+    "openapi.json": "f26c56dd8de85acf494bb45796a9f61dd5f86404f9a11fe4e28a36df7ada3ae4",
     "assets/runners-favicon-v2.svg": "0a799344cc1711a53ea4fc1e7a4021e74c19898904364e3fa202a5c087ada580",
     "assets/runners-header-dark-v2.svg": "fe9ef91500054430849f64ff9ad707f28f9e8b39f7cc9d418dd54794fa4c1c58",
     "assets/runners-header-light-v2.svg": "4df7380c43e538c5d5c3c28ad129d8203894e8b2df0ebdfbcd89aff0bc32ae50"

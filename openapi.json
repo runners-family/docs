@@ -221,6 +221,116 @@
         }
       }
     },
+    "/api/launch/create": {
+      "post": {
+        "tags": [
+          "Launch"
+        ],
+        "operationId": "createLaunch",
+        "summary": "Launch a coin in one call",
+        "description": "Publishes the coin's image and details and returns its launch transaction, signed by everyone except the creator. Sign it as the creator and send it to any RPC; RUNNERS tracks the launch on chain by its pool address. Optionally poll confirm with the mint and the transaction signature.",
+        "x-runners-rate-class": "upload",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaunchCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The launch transaction to sign and send.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchCreated"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`origin_forbidden`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`config_required` (no launch configuration for the pair token's price band yet) or `conflict`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "`request_too_large`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`request_invalid`, `image_invalid`, `standard_pair_sol`, `unsupported_quote`, `first_buy_too_large`, `first_buy_invalid` or `insufficient_funds`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`, or `unsent_limit` (the wallet holds 500 one-call launches it has not sent).",
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              },
+              "RateLimit-Policy": {
+                "$ref": "#/components/headers/RateLimit-Policy"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`unavailable`, `price_pending` or `price_unavailable`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/launch/estimate": {
       "get": {
         "tags": [
@@ -725,8 +835,221 @@
               "request_too_large",
               "image_invalid",
               "rate_limited",
-              "insufficient_funds"
+              "insufficient_funds",
+              "config_required",
+              "unsent_limit"
             ]
+          }
+        }
+      },
+      "LaunchCreateRequest": {
+        "type": "object",
+        "required": [
+          "owner",
+          "name",
+          "symbol",
+          "image",
+          "imageType"
+        ],
+        "description": "The coin's details and image. Name, symbol, description and links follow the metadata rules in the Launch a coin guide.",
+        "properties": {
+          "owner": {
+            "$ref": "#/components/schemas/Address",
+            "description": "The creator's wallet; it signs the returned transaction and pays."
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{1,10}$"
+          },
+          "description": {
+            "type": "string",
+            "default": ""
+          },
+          "website": {
+            "type": "string",
+            "default": ""
+          },
+          "x": {
+            "type": "string",
+            "default": ""
+          },
+          "telegram": {
+            "type": "string",
+            "default": ""
+          },
+          "image": {
+            "type": "string",
+            "contentEncoding": "base64",
+            "description": "Image bytes: PNG, JPEG, GIF or WebP, at most 5 MiB and 4096 x 4096 pixels."
+          },
+          "imageType": {
+            "type": "string",
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/gif",
+              "image/webp"
+            ]
+          },
+          "quoteMint": {
+            "$ref": "#/components/schemas/Address",
+            "description": "Pair token; defaults to SOL."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "rewards"
+            ],
+            "description": "Defaults to `standard` for SOL and `rewards` otherwise."
+          },
+          "firstBuy": {
+            "$ref": "#/components/schemas/Atoms",
+            "description": "Creator's initial buy in quote-token atoms; default \"0\"."
+          },
+          "priority": {
+            "$ref": "#/components/schemas/PriorityLevel"
+          },
+          "slippageBps": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          }
+        }
+      },
+      "Atoms": {
+        "type": "string",
+        "pattern": "^[0-9]{1,20}$",
+        "description": "Integer token amount in atoms (the token's smallest unit), as a decimal string. One whole token is 10^decimals atoms.",
+        "examples": [
+          "1000000"
+        ]
+      },
+      "PriorityLevel": {
+        "type": "string",
+        "enum": [
+          "normal",
+          "fast",
+          "turbo"
+        ],
+        "description": "Priority fee level: the 50th, 75th or 95th percentile of recent fees paid for the same accounts, at least 1,000 / 10,000 / 100,000 micro-lamports per compute unit, and at most 50,000 / 200,000 / 1,000,000 lamports in total."
+      },
+      "LaunchCreated": {
+        "type": "object",
+        "required": [
+          "transaction",
+          "mint",
+          "pool",
+          "config",
+          "quoteMint",
+          "mode",
+          "blockhash",
+          "lastValidBlockHeight",
+          "metadataUri",
+          "costs",
+          "firstBuyQuote"
+        ],
+        "properties": {
+          "transaction": {
+            "type": "string",
+            "contentEncoding": "base64",
+            "description": "Legacy wire signed by everyone except the creator (the RUNNERS launchpad signer and the new mint). Add the creator's signature to these bytes and send it to any RPC before the blockhash expires."
+          },
+          "mint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "pool": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "config": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "quoteMint": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "rewards"
+            ]
+          },
+          "blockhash": {
+            "type": "string"
+          },
+          "lastValidBlockHeight": {
+            "$ref": "#/components/schemas/Height"
+          },
+          "metadataUri": {
+            "type": "string"
+          },
+          "costs": {
+            "$ref": "#/components/schemas/LaunchCosts"
+          },
+          "firstBuyQuote": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "amountIn": {
+                    "$ref": "#/components/schemas/Atoms"
+                  },
+                  "tokensOut": {
+                    "$ref": "#/components/schemas/Atoms"
+                  },
+                  "minimumOut": {
+                    "$ref": "#/components/schemas/Atoms"
+                  },
+                  "supplyBps": {
+                    "type": "integer"
+                  },
+                  "slippageBps": {
+                    "type": "integer"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Height": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]{0,19})$",
+        "description": "Block height as a decimal string."
+      },
+      "LaunchCosts": {
+        "type": "object",
+        "description": "Rent the creator locks when the launch lands, in lamports (network and priority fees are separate). configRent is \"0\" when a shared config already exists. firstBuyRent is the token account an initial buy creates: included in poolRent and totalRent only when the launch has an initial buy (prepare knows its firstBuy; an estimate does not, so add firstBuyRent to an estimate for a launch with an initial buy). Every coin is a Token-2022 mint with its metadata in the mint: no metadata account or metadata fee. Rent uses the network's current rate.",
+        "required": [
+          "configRent",
+          "poolRent",
+          "totalRent",
+          "firstBuyRent",
+          "wrappedSolRent"
+        ],
+        "properties": {
+          "configRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "poolRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "totalRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "firstBuyRent": {
+            "$ref": "#/components/schemas/Atoms"
+          },
+          "wrappedSolRent": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Rent of the temporary wrapped-SOL account a SOL first buy opens and closes in the same transaction (refunded), in lamports."
           }
         }
       },
@@ -856,14 +1179,6 @@
           }
         }
       },
-      "Atoms": {
-        "type": "string",
-        "pattern": "^[0-9]{1,20}$",
-        "description": "Integer token amount in atoms (the token's smallest unit), as a decimal string. One whole token is 10^decimals atoms.",
-        "examples": [
-          "1000000"
-        ]
-      },
       "LaunchFeeShares": {
         "type": "object",
         "required": [
@@ -926,36 +1241,6 @@
           }
         },
         "description": "Shares of trading volume. From policy revision `pump-style-usd-airdrops-v5` the pool pays the creator natively (`creatorTradingFeePercentage` of the fee left after the protocol's 20%: 33 on standard coins, 0.495% of volume; 20 on reward coins, 0.5%); the platform collects only the rest (the partner fee). Earlier revisions omit the numerator fields."
-      },
-      "LaunchCosts": {
-        "type": "object",
-        "description": "Rent the creator locks when the launch lands, in lamports (network and priority fees are separate). configRent is \"0\" when a shared config already exists. firstBuyRent is the token account an initial buy creates: included in poolRent and totalRent only when the launch has an initial buy (prepare knows its firstBuy; an estimate does not, so add firstBuyRent to an estimate for a launch with an initial buy). Every coin is a Token-2022 mint with its metadata in the mint: no metadata account or metadata fee. Rent uses the network's current rate.",
-        "required": [
-          "configRent",
-          "poolRent",
-          "totalRent",
-          "firstBuyRent",
-          "wrappedSolRent"
-        ],
-        "properties": {
-          "configRent": {
-            "$ref": "#/components/schemas/Atoms"
-          },
-          "poolRent": {
-            "$ref": "#/components/schemas/Atoms"
-          },
-          "totalRent": {
-            "$ref": "#/components/schemas/Atoms"
-          },
-          "firstBuyRent": {
-            "$ref": "#/components/schemas/Atoms"
-          },
-          "wrappedSolRent": {
-            "type": "string",
-            "pattern": "^\\d+$",
-            "description": "Rent of the temporary wrapped-SOL account a SOL first buy opens and closes in the same transaction (refunded), in lamports."
-          }
-        }
       },
       "LaunchPrepareRequest": {
         "type": "object",
@@ -1034,15 +1319,6 @@
             }
           }
         }
-      },
-      "PriorityLevel": {
-        "type": "string",
-        "enum": [
-          "normal",
-          "fast",
-          "turbo"
-        ],
-        "description": "Priority fee level: the 50th, 75th or 95th percentile of recent fees paid for the same accounts, at least 1,000 / 10,000 / 100,000 micro-lamports per compute unit, and at most 50,000 / 200,000 / 1,000,000 lamports in total."
       },
       "PreparedLaunch": {
         "type": "object",
@@ -1261,11 +1537,6 @@
             "type": "string"
           }
         }
-      },
-      "Height": {
-        "type": "string",
-        "pattern": "^(0|[1-9][0-9]{0,19})$",
-        "description": "Block height as a decimal string."
       },
       "LaunchTagRequest": {
         "type": "object",

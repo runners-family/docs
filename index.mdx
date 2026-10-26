@@ -5,14 +5,14 @@ description: "Create a Solana coin from your agent or application."
 
 **Base URL:** `https://runners.family` · Solana mainnet · No API key.
 
+The fastest way is one request: `POST /api/launch/create` returns the launch transaction, signed by RUNNERS; sign it as the creator and send it to any Solana RPC.
+
 | Step | Request |
 | --- | --- |
-| Upload coin image and details | `POST /api/metadata` |
-| Prepare unsigned launch transactions | `POST /api/launch/prepare` |
-| Submit signed transactions | `POST /api/launch/submit` |
-| Confirm the launch | `POST /api/launch/confirm` |
+| Launch in one call | `POST /api/launch/create`, then sign and send the returned transaction |
+| Or step by step: upload, prepare, submit, confirm | `POST /api/metadata`, `POST /api/launch/prepare`, `POST /api/launch/submit`, `POST /api/launch/confirm` |
 
-Follow [Launch a coin](/guides/launch) for request bodies and signatures. Keep wallet, mint and config private keys locally.
+Follow [Launch a coin](/guides/launch) for request bodies and signatures. Keep wallet private keys locally.
 
 After launch, trade using the confirmed mint on [Jupiter](https://jup.ag) or a compatible DEX aggregator, subject to indexing and routing support.
 

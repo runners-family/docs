@@ -30,7 +30,7 @@ for (const [section, slug, title, description] of guides) {
   generated[`${slug}.mdx`] = frontmatter(title, description) + adapt(body) + '\n';
 }
 const spec = JSON.parse(contract);
-const launchPaths = ['/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/tag', '/api/launch/submit', '/api/launch/confirm'];
+const launchPaths = ['/api/metadata', '/api/metadata/{namespace}/{id}/{filename}', '/api/launch/create', '/api/launch/estimate', '/api/launch/prepare', '/api/launch/tag', '/api/launch/submit', '/api/launch/confirm'];
 spec.paths = Object.fromEntries(launchPaths.map(path => {
   if (!spec.paths[path]) throw new Error(`Missing launch endpoint: ${path}`);
   return [path, spec.paths[path]];
