@@ -259,7 +259,7 @@
         ],
         "operationId": "prepareLaunch",
         "summary": "Prepare a launch and get its unsigned transactions",
-        "description": "Returns one transaction (pool + optional creator first buy) when a shared config exists for the quote token's price band, otherwise two (config, then pool). Sign each with its listed signers and submit. The curve is converted from the launch policy's USD targets with the pair token's stored USD price, refreshed weekly; a pair token used for the first time is priced once.",
+        "description": "Returns one transaction (pool + optional creator first buy) when a shared config exists for the quote token's price band, otherwise two (config, then pool). Sign each with its listed signers and submit. SOL coins use one fixed curve in SOL, so their dollar market caps move with SOL's price. For other pair tokens the curve is converted from the launch policy's USD targets with the pair token's stored USD price, refreshed weekly; a pair token used for the first time is priced once.",
         "x-runners-rate-class": "launch",
         "requestBody": {
           "required": true,
